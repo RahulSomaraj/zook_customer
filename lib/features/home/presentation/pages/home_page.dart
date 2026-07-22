@@ -1,0 +1,141 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/app_router.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../product/domain/entities/category.dart';
+import '../../../product/domain/entities/product.dart';
+import '../../../product/presentation/pages/product_list_page.dart';
+import '../../../wishlist/presentation/cubit/wishlist_cubit.dart';
+import '../../../wishlist/presentation/widgets/wishlist_product_grid.dart';
+import '../cubit/home_cubit.dart';
+import '../widgets/category_pills.dart';
+import '../widgets/home_header.dart';
+import '../widgets/promo_banner.dart';
+import '../widgets/section_header.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          HomeCubit(repository: sl(), categoryRepository: sl())..load(),
+      child: const _HomeView(),
+    );
+  }
+}
+
+class _HomeView extends StatelessWidget {
+  const _HomeView();
+
+  /// Opens the Category Browse screen for [category].
+  void _openCategory(BuildContext context, ShopCategory category) =>
+      context.push(AppRoute.category.path, extra: category);
+
+  void _openProduct(BuildContext context, Product product) =>
+      context.push(AppRoute.product.path, extra: product);
+
+  void _openList(BuildContext context, String title, List<Product> products) =>
+      context.push(
+        AppRoute.productList.path,
+        extra: ProductListArgs(title: title, products: products),
+      );
+
+  /// Confirms, clears the session + local wishlist, and returns to login.
+  Future<void> _logout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    context.read<AuthBloc>().add(const LogoutRequested());
+    context.read<WishlistCubit>().reset();
+    context.go(AppRoute.login.path);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: Column(
+        children: [
+          HomeHeader(
+            greeting: 'Good morning 👋',
+            onSearchTap: () => context.go(AppRoute.search.path),
+            onLogoutTap: () => _logout(context),
+          ),
+          Expanded(
+            child: BlocBuilder<HomeCubit, HomeState>(
+              builder: (context, state) {
+                if (state.status == HomeStatus.loading ||
+                    state.status == HomeStatus.initial) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                }
+                if (state.status == HomeStatus.failure) {
+                  return Center(child: Text(state.errorMessage ?? 'Error'));
+                }
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CategoryPills(
+                        categories: state.categories,
+                        selectedIndex: state.selectedCategoryIndex,
+                        onSelected: (i) {
+                          context.read<HomeCubit>().selectCategory(i);
+                          _openCategory(context, state.categories[i]);
+                        },
+                      ),
+                      const PromoBanner(),
+                      SectionHeader(
+                        title: 'Recently listed',
+                        onAction: () => _openList(
+                            context, 'Recently listed', state.recentlyListed),
+                      ),
+                      WishlistProductGrid(
+                        products: state.recentlyListed.take(4).toList(),
+                        onTap: (p) => _openProduct(context, p),
+                      ),
+                      SectionHeader(
+                        title: 'Top picks',
+                        onAction: () =>
+                            _openList(context, 'Top picks', state.topPicks),
+                      ),
+                      WishlistProductGrid(
+                        products: state.topPicks.take(4).toList(),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        onTap: (p) => _openProduct(context, p),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

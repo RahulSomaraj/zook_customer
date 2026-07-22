@@ -1,0 +1,276 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/app_router.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/phone_input_field.dart';
+import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/social_button.dart';
+import '../bloc/auth_bloc.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _phoneController = TextEditingController();
+  String? _phoneError;
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _continue() {
+    if (!AppConstants.isValidMobile(_phoneController.text)) {
+      setState(() => _phoneError = AppStrings.invalidPhone);
+      return;
+    }
+    setState(() => _phoneError = null);
+    context
+        .read<AuthBloc>()
+        .add(OtpRequested(AppConstants.toE164(_phoneController.text)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      body: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state.status == AuthStatus.otpSent) {
+            context.push(AppRoute.otp.path, extra: state.phoneNumber);
+          } else if (state.status == AuthStatus.failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.errorMessage ?? 'Failed')),
+            );
+          }
+        },
+        builder: (context, state) {
+          final loading = state.status == AuthStatus.loading;
+          return Column(
+            children: [
+              // Dark hero
+              SizedBox(
+                height: 200,
+                child: ClipRect(
+                  child: Stack(
+                  children: [
+                    Container(color: AppColors.black),
+                    // Decorative glows (match the splash / mockup hero)
+                    Positioned(
+                      top: -60,
+                      right: -60,
+                      child: _HeroGlow(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        size: 200,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -40,
+                      left: -40,
+                      child: _HeroGlow(
+                        color: AppColors.primaryLight.withValues(alpha: 0.12),
+                        size: 160,
+                      ),
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(AppStrings.appName.toUpperCase(),
+                              style: AppTextStyles.brand(size: 42)),
+                          const SizedBox(height: 6),
+                          Text(
+                            AppStrings.tagline,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.white.withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                ),
+              ),
+              // Body
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${AppStrings.welcomeBack} 👋',
+                          style: AppTextStyles.title),
+                      const SizedBox(height: 4),
+                      Text(AppStrings.signInToAccount,
+                          style: AppTextStyles.caption),
+                      const SizedBox(height: 24),
+                      Text(AppStrings.mobileNumber.toUpperCase(),
+                          style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      PhoneInputField(
+                        controller: _phoneController,
+                        errorText: _phoneError,
+                        onChanged: (_) {
+                          if (_phoneError != null) {
+                            setState(() => _phoneError = null);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      PrimaryButton(
+                        label: AppStrings.continueWithOtp,
+                        isLoading: loading,
+                        trailing: const Icon(Icons.chevron_right,
+                            color: AppColors.white, size: 20),
+                        onPressed: _continue,
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider(color: AppColors.border)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(AppStrings.orContinueWith,
+                                style: AppTextStyles.caption),
+                          ),
+                          const Expanded(child: Divider(color: AppColors.border)),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      SocialButton(
+                        label: AppStrings.continueWithApple,
+                        icon: const Icon(Icons.apple,
+                            size: 20, color: AppColors.black),
+                        onPressed: () {},
+                      ),
+                      const SizedBox(height: 10),
+                      SocialButton(
+                        label: AppStrings.continueWithGoogle,
+                        icon: const _GoogleGlyph(),
+                        onPressed: () {},
+                      ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => context.push(AppRoute.signup.path),
+                          child: Text.rich(
+                            TextSpan(
+                              text: '${AppStrings.noAccount} ',
+                              style: AppTextStyles.caption,
+                              children: [
+                                TextSpan(
+                                  text: AppStrings.signUpFree,
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Soft radial glow used in the dark login hero.
+class _HeroGlow extends StatelessWidget {
+  final Color color;
+  final double size;
+  const _HeroGlow({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, Colors.transparent]),
+      ),
+    );
+  }
+}
+
+/// Google "G" brand mark, drawn as vector arcs (no extra dependency).
+///
+/// For a pixel-perfect, brand-official logo, bundle Google's provided
+/// g-logo asset and render it with flutter_svg instead.
+class _GoogleGlyph extends StatelessWidget {
+  const _GoogleGlyph({this.size = 18});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: const CustomPaint(painter: _GoogleLogoPainter()),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  const _GoogleLogoPainter();
+
+  static const Color _red = Color(0xFFEA4335);
+  static const Color _yellow = Color(0xFFFBBC05);
+  static const Color _green = Color(0xFF34A853);
+  static const Color _blue = Color(0xFF4285F4);
+
+  static double _rad(double deg) => deg * 3.1415926535897932 / 180.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double t = size.width * 0.26;
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    final double radius = size.width / 2 - t / 2;
+    final Rect rect = Rect.fromCircle(center: center, radius: radius);
+
+    final Paint arc = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = t
+      ..strokeCap = StrokeCap.butt;
+
+    canvas.drawArc(rect, _rad(130), _rad(100), false, arc..color = _yellow);
+    canvas.drawArc(rect, _rad(230), _rad(80), false, arc..color = _red);
+    canvas.drawArc(rect, _rad(310), _rad(70), false, arc..color = _blue);
+    canvas.drawArc(rect, _rad(40), _rad(90), false, arc..color = _green);
+
+    // Blue crossbar of the "G".
+    final Paint bar = Paint()
+      ..color = _blue
+      ..style = PaintingStyle.fill;
+    final RRect barRect = RRect.fromLTRBR(
+      center.dx,
+      center.dy - t / 2,
+      center.dx + radius + t / 2,
+      center.dy + t / 2,
+      const Radius.circular(1),
+    );
+    canvas.drawRRect(barRect, bar);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}

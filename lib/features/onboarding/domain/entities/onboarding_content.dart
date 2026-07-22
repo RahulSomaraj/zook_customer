@@ -1,0 +1,45 @@
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/cube_icon.dart';
+import 'onboarding_item.dart';
+
+/// Static onboarding slides. Mirrors the mockup copy.
+const List<OnboardingItem> kOnboardingItems = [
+  OnboardingItem(
+    emoji: '🛍️',
+    circleGradient: AppColors.circleOrange,
+    title: 'Buy verified secondhand goods',
+    subtitle:
+        'Every item is quality-checked by our inspectors. What you see is exactly what you get — condition guaranteed.',
+    topBadge: OnboardingBadge(
+        icon: Icons.check, iconColor: AppColors.success, text: 'Zook Verified'),
+    bottomBadge: OnboardingBadge(
+        icon: Icons.smartphone, iconColor: AppColors.primary, text: '1,847 listings'),
+  ),
+  OnboardingItem(
+    emoji: '💰',
+    circleGradient: AppColors.circleGreen,
+    title: 'Sell your old items easily',
+    subtitle:
+        'Book a home inspection, we verify your item and list it as Zook Verified. Get paid directly to your bank account.',
+    topBadge: OnboardingBadge(
+        icon: Icons.local_offer_outlined, iconColor: AppColors.primary, text: 'AED 1,609 payout'),
+    bottomBadge: OnboardingBadge(
+        icon: Icons.account_balance, iconColor: Color(0xFF15803D), text: 'Direct to your bank'),
+  ),
+  OnboardingItem(
+    emoji: '🚚',
+    circleGradient: AppColors.circleBlue,
+    title: 'Fast delivery across the UAE',
+    subtitle:
+        'Delivered by trusted couriers direct from the seller to your door. Track every step in real time.',
+    topBadge: OnboardingBadge(
+        icon: Icons.inventory_2_outlined,
+        iconColor: Color(0xFF1D4ED8),
+        text: 'Porter.ae delivery',
+        iconWidget: CubeIcon(color: Color(0xFF1D4ED8), size: 15)),
+    bottomBadge: OnboardingBadge(
+        icon: Icons.bolt, iconColor: Color(0xFFB45309), text: 'Same-day available'),
+  ),
+];
