@@ -10,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/phone_input_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/zook_text_field.dart';
+import '../../../../core/widgets/zook_alert.dart';
 import '../bloc/auth_bloc.dart';
 
 class SignupPage extends StatefulWidget {
@@ -57,9 +58,12 @@ class _SignupPageState extends State<SignupPage> {
 
     if (nameError != null || emailError != null || phoneError != null) return;
 
-    context
-        .read<AuthBloc>()
-        .add(OtpRequested(AppConstants.toE164(_phoneController.text)));
+    context.read<AuthBloc>().add(RegisterRequested(
+          fullName: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          countryCode: AppConstants.countryCode,
+          phone: AppConstants.nationalDigits(_phoneController.text),
+        ));
   }
 
   @override
@@ -71,13 +75,19 @@ class _SignupPageState extends State<SignupPage> {
           if (state.status == AuthStatus.otpSent) {
             context.push(AppRoute.otp.path, extra: state.phoneNumber);
           } else if (state.status == AuthStatus.failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage ?? 'Failed')),
-            );
+            showZookAlert(context,
+                type: ZookAlertType.error,
+                title: 'Registration failed',
+                message: state.errorMessage ?? 'Please try again.');
           }
         },
         builder: (context, state) {
           final loading = state.status == AuthStatus.loading;
+          final hintStyle = AppTextStyles.body.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            color: AppColors.light,
+          );
           return SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -98,6 +108,7 @@ class _SignupPageState extends State<SignupPage> {
                   ZookTextField(
                     label: AppStrings.fullName,
                     hint: AppStrings.fullNameHint,
+                    hintStyle: hintStyle,
                     controller: _nameController,
                     keyboardType: TextInputType.name,
                     errorText: _nameError,
@@ -111,6 +122,7 @@ class _SignupPageState extends State<SignupPage> {
                   ZookTextField(
                     label: AppStrings.email,
                     hint: AppStrings.emailHint,
+                    hintStyle: hintStyle,
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     errorText: _emailError,
@@ -126,6 +138,8 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 6),
                   PhoneInputField(
                     controller: _phoneController,
+                    hint: AppStrings.mobileHint,
+                    hintStyle: hintStyle,
                     errorText: _phoneError,
                     onChanged: (_) {
                       if (_phoneError != null) {

@@ -36,9 +36,10 @@ class AppStrings {
   static const String createAccount = 'Create account';
   static const String signUpSubtitle = 'Join Zook in a few seconds';
   static const String fullName = 'Full name';
-  static const String fullNameHint = 'e.g. Ahmed Khan';
+  static const String fullNameHint = 'Enter your full name';
   static const String email = 'Email';
-  static const String emailHint = 'you@example.com';
+  static const String emailHint = 'Enter your email';
+  static const String mobileHint = 'Enter your mobile number';
   static const String continueText = 'Continue';
   static const String invalidName = 'Invalid name';
   static const String invalidEmail = 'Invalid email address';

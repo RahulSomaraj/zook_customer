@@ -6,6 +6,7 @@ class ApiConstants {
   static const String baseUrl = 'https://uatapi.zookapp.co/api';
 
   // Auth
+  static const String register = '/auth/customer/register';
   static const String sendOtp = '/auth/customer/otp/send';
   static const String verifyOtp = '/auth/customer/otp/verify';
 

@@ -8,6 +8,7 @@ import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/logout.dart';
+import '../../features/auth/domain/usecases/register.dart';
 import '../../features/auth/domain/usecases/send_otp.dart';
 import '../../features/auth/domain/usecases/verify_otp.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -63,12 +64,13 @@ Future<void> initDependencies() async {
     () => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),
   );
   // Domain
+  sl.registerLazySingleton(() => Register(sl()));
   sl.registerLazySingleton(() => SendOtp(sl()));
   sl.registerLazySingleton(() => VerifyOtp(sl()));
   sl.registerLazySingleton(() => Logout(sl()));
   // Presentation
   sl.registerFactory(
-    () => AuthBloc(sendOtp: sl(), verifyOtp: sl(), logout: sl()),
+    () => AuthBloc(register: sl(), sendOtp: sl(), verifyOtp: sl(), logout: sl()),
   );
 
   // ---- Product / catalog (live API) ----

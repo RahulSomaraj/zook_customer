@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/auth_user.dart';
 import '../../domain/usecases/logout.dart';
+import '../../domain/usecases/register.dart';
 import '../../domain/usecases/send_otp.dart';
 import '../../domain/usecases/verify_otp.dart';
 
@@ -10,15 +11,18 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  final Register register;
   final SendOtp sendOtp;
   final VerifyOtp verifyOtp;
   final Logout logout;
 
   AuthBloc({
+    required this.register,
     required this.sendOtp,
     required this.verifyOtp,
     required this.logout,
   }) : super(const AuthState()) {
+    on<RegisterRequested>(_onRegisterRequested);
     on<OtpRequested>(_onOtpRequested);
     on<OtpSubmitted>(_onOtpSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
@@ -30,6 +34,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await logout();
     emit(const AuthState()); // back to unauthenticated/initial
+  }
+
+  Future<void> _onRegisterRequested(
+    RegisterRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final e164 = '${event.countryCode}${event.phone}';
+    emit(state.copyWith(status: AuthStatus.loading, phoneNumber: e164));
+
+    final result = await register(RegisterParams(
+      fullName: event.fullName,
+      email: event.email,
+      countryCode: event.countryCode,
+      phone: event.phone,
+    ));
+
+    await result.fold(
+      (failure) async => emit(state.copyWith(
+          status: AuthStatus.failure, errorMessage: failure.message)),
+      (_) async {
+        // Account created — send an OTP so the user can verify and sign in.
+        final otp = await sendOtp(SendOtpParams(phoneNumber: e164));
+        otp.fold(
+          (failure) => emit(state.copyWith(
+              status: AuthStatus.failure, errorMessage: failure.message)),
+          (devCode) =>
+              emit(state.copyWith(status: AuthStatus.otpSent, devOtp: devCode)),
+        );
+      },
+    );
   }
 
   Future<void> _onOtpRequested(

@@ -17,6 +17,28 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
+  Future<Either<Failure, Unit>> register({
+    required String fullName,
+    required String email,
+    required String countryCode,
+    required String phone,
+  }) async {
+    try {
+      await remoteDataSource.register(
+        fullName: fullName,
+        email: email,
+        countryCode: countryCode,
+        phone: phone,
+      );
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(ServerFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, String?>> sendOtp(String phoneNumber) async {
     try {
       final devCode = await remoteDataSource.sendOtp(phoneNumber);

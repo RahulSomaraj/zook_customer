@@ -11,6 +11,7 @@ class PhoneInputField extends StatelessWidget {
   final String countryFlag;
   final String countryCode;
   final String hint;
+  final TextStyle? hintStyle;
   final ValueChanged<String>? onChanged;
 
   /// When non-null, the field shows a red border and this message below it.
@@ -22,6 +23,7 @@ class PhoneInputField extends StatelessWidget {
     this.countryFlag = AppConstants.countryFlag,
     this.countryCode = AppConstants.countryCode,
     this.hint = '50 000 0000',
+    this.hintStyle,
     this.onChanged,
     this.errorText,
   });
@@ -68,6 +70,7 @@ class PhoneInputField extends StatelessWidget {
                   ),
                   decoration: InputDecoration(
                     hintText: hint,
+                    hintStyle: hintStyle,
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,

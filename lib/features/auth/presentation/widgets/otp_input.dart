@@ -32,6 +32,9 @@ class _OtpInputState extends State<OtpInput> {
     _controllers =
         List.generate(widget.length, (_) => TextEditingController());
     _focusNodes = List.generate(widget.length, (_) => FocusNode());
+    for (final f in _focusNodes) {
+      f.addListener(() => setState(() {}));
+    }
   }
 
   @override
@@ -66,45 +69,51 @@ class _OtpInputState extends State<OtpInput> {
       children: List.generate(widget.length, (i) {
         final filled = _controllers[i].text.isNotEmpty;
         final active = _focusNodes[i].hasFocus;
+        final highlighted = filled || active;
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(right: i == widget.length - 1 ? 0 : 10),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: filled ? AppColors.primaryPale : AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (filled || active)
-                        ? AppColors.primary
-                        : AppColors.border,
-                    width: 2,
-                  ),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: filled ? AppColors.primaryPale : AppColors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: highlighted ? AppColors.primary : AppColors.border,
+                  width: 2,
                 ),
-                alignment: Alignment.center,
-                child: TextField(
-                  controller: _controllers[i],
-                  focusNode: _focusNodes[i],
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                  maxLength: 1,
-                  showCursor: false,
-                  style: AppTextStyles.title.copyWith(
-                    fontSize: 24,
-                    color: filled ? AppColors.primary : AppColors.black,
-                  ),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    counterText: '',
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: (v) => _onChanged(v, i),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          blurRadius: 0,
+                          spreadRadius: 4,
+                        ),
+                      ]
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: TextField(
+                controller: _controllers[i],
+                focusNode: _focusNodes[i],
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                maxLength: 1,
+                showCursor: false,
+                style: AppTextStyles.title.copyWith(
+                  fontSize: 24,
+                  color: filled ? AppColors.primary : AppColors.black,
                 ),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  counterText: '',
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (v) => _onChanged(v, i),
               ),
             ),
           ),

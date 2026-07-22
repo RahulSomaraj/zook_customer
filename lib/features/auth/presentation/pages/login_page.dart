@@ -11,6 +11,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/phone_input_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/social_button.dart';
+import '../../../../core/widgets/zook_alert.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginPage extends StatefulWidget {
@@ -50,9 +51,10 @@ class _LoginPageState extends State<LoginPage> {
           if (state.status == AuthStatus.otpSent) {
             context.push(AppRoute.otp.path, extra: state.phoneNumber);
           } else if (state.status == AuthStatus.failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage ?? 'Failed')),
-            );
+            showZookAlert(context,
+                type: ZookAlertType.error,
+                title: 'Could not send code',
+                message: state.errorMessage ?? 'Please try again.');
           }
         },
         builder: (context, state) {

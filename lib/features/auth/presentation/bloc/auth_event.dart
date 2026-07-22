@@ -26,6 +26,23 @@ class OtpSubmitted extends AuthEvent {
   List<Object?> get props => [phoneNumber, otp];
 }
 
+/// User submitted the registration form to create a new account.
+class RegisterRequested extends AuthEvent {
+  final String fullName;
+  final String email;
+  final String countryCode;
+  final String phone;
+  const RegisterRequested({
+    required this.fullName,
+    required this.email,
+    required this.countryCode,
+    required this.phone,
+  });
+
+  @override
+  List<Object?> get props => [fullName, email, countryCode, phone];
+}
+
 /// User asked to sign out. Clears the stored session.
 class LogoutRequested extends AuthEvent {
   const LogoutRequested();

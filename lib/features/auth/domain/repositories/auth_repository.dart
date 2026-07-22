@@ -5,6 +5,14 @@ import '../entities/auth_user.dart';
 
 /// Contract the data layer fulfils. Presentation depends on this, not on Dio.
 abstract class AuthRepository {
+  /// Registers a new customer account with the given details.
+  Future<Either<Failure, Unit>> register({
+    required String fullName,
+    required String email,
+    required String countryCode,
+    required String phone,
+  });
+
   /// Requests an OTP be sent to [phoneNumber] (E.164, e.g. +97150...).
   /// Returns the dev code if the API provides one (UAT), otherwise null.
   Future<Either<Failure, String?>> sendOtp(String phoneNumber);

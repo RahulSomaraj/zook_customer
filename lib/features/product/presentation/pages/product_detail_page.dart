@@ -13,6 +13,7 @@ import '../../domain/entities/product.dart';
 import '../../domain/entities/product_detail.dart';
 import '../cubit/product_detail_cubit.dart';
 import '../widgets/grade_badge.dart';
+import '../../../../core/widgets/zook_alert.dart';
 
 /// Full product detail screen. Uses the tapped [product] as an instant preview
 /// while the full detail loads from `GET /products/{id}`.
@@ -25,9 +26,10 @@ class ProductDetailPage extends StatelessWidget {
     if (buyNow) {
       context.push(AppRoute.checkout.path);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Added to cart 🛒')));
+      showZookAlert(context,
+          type: ZookAlertType.success,
+          title: 'Added to cart',
+          message: 'Item added to your cart.');
     }
   }
 
@@ -451,7 +453,6 @@ class _DetailReportState extends State<_DetailReport> {
   Widget build(BuildContext context) {
     final d = widget.detail;
 
-    print(d);
     final rows = <List<String>>[
       if (d?.storageVariant != null) ['Storage', d!.storageVariant!],
       if (d?.color != null) ['Color', d!.color!],

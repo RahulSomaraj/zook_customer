@@ -6,6 +6,14 @@ import '../../../../core/network/dio_client.dart';
 import '../models/auth_user_model.dart';
 
 abstract class AuthRemoteDataSource {
+  /// Registers a new customer. Throws [ServerException] on failure.
+  Future<void> register({
+    required String fullName,
+    required String email,
+    required String countryCode,
+    required String phone,
+  });
+
   /// Requests an OTP for [phone]. Returns the dev code when the API includes
   /// one (UAT convenience), otherwise null.
   Future<String?> sendOtp(String phone);
@@ -19,6 +27,32 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final DioClient client;
   AuthRemoteDataSourceImpl({required this.client});
+
+  @override
+  Future<void> register({
+    required String fullName,
+    required String email,
+    required String countryCode,
+    required String phone,
+  }) async {
+    try {
+      final res = await client.dio.post(ApiConstants.register, data: {
+        'fullName': fullName,
+        'email': email,
+        'countryCode': countryCode,
+        'phone': phone,
+      });
+      final map = (res.data as Map).cast<String, dynamic>();
+      if (map['success'] == true) return;
+      throw ServerException(_messageFrom(map));
+    } on DioException catch (e) {
+      final resData = e.response?.data;
+      if (resData is Map) {
+        throw ServerException(_messageFrom(resData.cast<String, dynamic>()));
+      }
+      throw ServerException(e.message ?? 'Network error. Please try again.');
+    }
+  }
 
   @override
   Future<String?> sendOtp(String phone) async {

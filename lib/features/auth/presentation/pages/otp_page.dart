@@ -9,6 +9,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/zook_alert.dart';
 import '../bloc/auth_bloc.dart';
 import '../widgets/otp_input.dart';
 
@@ -77,9 +78,10 @@ class _OtpPageState extends State<OtpPage> {
             if (state.status == AuthStatus.authenticated) {
               context.go(AppRoute.home.path);
             } else if (state.status == AuthStatus.failure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.errorMessage ?? 'Failed')),
-              );
+              showZookAlert(context,
+                  type: ZookAlertType.error,
+                  title: 'Verification failed',
+                  message: state.errorMessage ?? 'Please try again.');
             }
           },
           builder: (context, state) {
@@ -101,7 +103,7 @@ class _OtpPageState extends State<OtpPage> {
                     height: 64,
                     decoration: BoxDecoration(
                       color: AppColors.primaryPale,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                     ),
                     alignment: Alignment.center,
                     child: const Icon(Icons.smartphone,
@@ -125,28 +127,10 @@ class _OtpPageState extends State<OtpPage> {
                   ),
                   if (state.devOtp != null && state.devOtp!.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryPale,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.build,
-                              size: 14, color: AppColors.primaryDark),
-                          const SizedBox(width: 6),
-                          Text(
-                            'UAT dev code: ${state.devOtp}',
-                            style: AppTextStyles.label.copyWith(
-                                fontSize: 12,
-                                letterSpacing: 0,
-                                color: AppColors.primaryDark),
-                          ),
-                        ],
-                      ),
+                    ZookAlert(
+                      type: ZookAlertType.info,
+                      title: 'UAT dev code',
+                      message: state.devOtp!,
                     ),
                   ],
                   const SizedBox(height: 28),
