@@ -17,7 +17,9 @@ class ZookApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
+        BlocProvider<AuthBloc>(
+          create: (_) => sl<AuthBloc>()..add(const AppStarted()),
+        ),
         BlocProvider<CartCubit>.value(value: sl<CartCubit>()),
         BlocProvider<WishlistCubit>.value(value: sl<WishlistCubit>()),
       ],

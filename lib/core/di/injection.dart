@@ -70,7 +70,13 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => Logout(sl()));
   // Presentation
   sl.registerFactory(
-    () => AuthBloc(register: sl(), sendOtp: sl(), verifyOtp: sl(), logout: sl()),
+    () => AuthBloc(
+        register: sl(),
+        sendOtp: sl(),
+        verifyOtp: sl(),
+        logout: sl(),
+        authRepository: sl(),
+      ),
   );
 
   // ---- Product / catalog (live API) ----

@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/auth_user.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/register.dart';
 import '../../domain/usecases/send_otp.dart';
@@ -15,17 +16,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SendOtp sendOtp;
   final VerifyOtp verifyOtp;
   final Logout logout;
+  final AuthRepository authRepository;
 
   AuthBloc({
     required this.register,
     required this.sendOtp,
     required this.verifyOtp,
     required this.logout,
+    required this.authRepository,
   }) : super(const AuthState()) {
+    on<AppStarted>(_onAppStarted);
     on<RegisterRequested>(_onRegisterRequested);
     on<OtpRequested>(_onOtpRequested);
     on<OtpSubmitted>(_onOtpSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
+  }
+
+  /// Restores the cached user (name/phone) so the home greeting and profile
+  /// show the signed-in user after an app relaunch, not just right after login.
+  void _onAppStarted(AppStarted event, Emitter<AuthState> emit) {
+    final user = authRepository.currentUser;
+    if (user != null) {
+      emit(state.copyWith(
+        status: AuthStatus.authenticated,
+        user: user,
+        phoneNumber: user.phoneNumber,
+      ));
+    }
   }
 
   Future<void> _onLogoutRequested(

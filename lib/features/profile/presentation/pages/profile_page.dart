@@ -27,26 +27,7 @@ class ProfilePage extends StatelessWidget {
   void _soon(BuildContext context) => ScaffoldMessenger.of(context)
       .showSnackBar(const SnackBar(content: Text('Coming soon')));
 
-  Future<void> _logout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Log out'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
+  void _logout(BuildContext context) {
     context.read<AuthBloc>().add(const LogoutRequested());
     context.read<WishlistCubit>().reset();
     context.go(AppRoute.login.path);
@@ -58,7 +39,8 @@ class ProfilePage extends StatelessWidget {
     final hasName = (user?.fullName?.trim().isNotEmpty ?? false);
     final name = hasName ? user!.fullName!.trim() : 'Zook User';
     final phone = user?.phoneNumber ?? '';
-    final savedCount = context.watch<WishlistCubit>().state.ids.length;
+    // Placeholder stats to match the mockup; wire to real data later.
+    const savedCount = 12;
     final orderCount = kMockOrders.length;
     final activeCount = kMockOrders.where((o) => o.status.isActive).length;
 
@@ -79,14 +61,17 @@ class ProfilePage extends StatelessWidget {
               color: AppColors.surface,
               border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
-            child: Row(
-              children: [
-                _Stat(value: '$orderCount', label: 'Orders'),
-                _statDivider(),
-                const _Stat(value: '2', label: 'Selling'),
-                _statDivider(),
-                _Stat(value: '$savedCount', label: 'Saved'),
-              ],
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _Stat(value: '$orderCount', label: 'Orders'),
+                  _statDivider(),
+                  const _Stat(value: '2', label: 'Selling'),
+                  _statDivider(),
+                  _Stat(value: '$savedCount', label: 'Saved'),
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -216,7 +201,8 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _statDivider() => Container(width: 1, height: 40, color: AppColors.border);
+  // Full-height divider (matches the mockup's border-right between stats).
+  Widget _statDivider() => Container(width: 1, color: AppColors.border);
 }
 
 class _Header extends StatelessWidget {

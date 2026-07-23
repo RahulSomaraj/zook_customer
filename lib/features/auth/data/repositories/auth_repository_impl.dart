@@ -6,6 +6,7 @@ import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_data_source.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../models/auth_user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
@@ -66,6 +67,8 @@ class AuthRepositoryImpl implements AuthRepository {
           refreshToken: user.refreshToken,
         );
       }
+      // Cache the profile so the greeting/avatar survive app relaunches.
+      await localDataSource.saveUser(user.toJson());
       return Right(user);
     } on ServerException catch (e) {
       return Left(AuthFailure(e.message));
@@ -76,6 +79,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   bool get isLoggedIn => localDataSource.isLoggedIn;
+
+  @override
+  AuthUser? get currentUser {
+    if (!localDataSource.isLoggedIn) return null;
+    final json = localDataSource.cachedUser;
+    if (json == null) return null;
+    return AuthUserModel.fromJson(json);
+  }
 
   @override
   Future<void> logout() => localDataSource.clear();

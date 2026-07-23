@@ -12,13 +12,11 @@ class HomeHeader extends StatelessWidget {
   /// Falls back to a person icon when null/empty.
   final String? avatarInitials;
   final VoidCallback? onSearchTap;
-  final VoidCallback? onLogoutTap;
   const HomeHeader({
     super.key,
     required this.greeting,
     this.avatarInitials,
     this.onSearchTap,
-    this.onLogoutTap,
   });
 
   @override
@@ -101,17 +99,6 @@ class HomeHeader extends StatelessWidget {
                                   )
                                 : const Icon(Icons.person,
                                     size: 18, color: AppColors.white),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: onLogoutTap,
-                            behavior: HitTestBehavior.opaque,
-                            child: _CircleIcon(
-                              child: Icon(Icons.logout,
-                                  size: 16,
-                                  color: AppColors.white
-                                      .withValues(alpha: 0.75)),
-                            ),
                           ),
                         ],
                       ),

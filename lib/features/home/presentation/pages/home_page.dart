@@ -9,7 +9,6 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../product/domain/entities/category.dart';
 import '../../../product/domain/entities/product.dart';
 import '../../../product/presentation/pages/product_list_page.dart';
-import '../../../wishlist/presentation/cubit/wishlist_cubit.dart';
 import '../../../wishlist/presentation/widgets/wishlist_product_grid.dart';
 import '../cubit/home_cubit.dart';
 import '../widgets/category_pills.dart';
@@ -64,33 +63,6 @@ class _HomeView extends StatelessWidget {
     return (first + last).toUpperCase();
   }
 
-  /// Confirms, clears the session + local wishlist, and returns to login.
-  Future<void> _logout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            child: const Text('Log out'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-
-    context.read<AuthBloc>().add(const LogoutRequested());
-    context.read<WishlistCubit>().reset();
-    context.go(AppRoute.login.path);
-  }
-
   @override
   Widget build(BuildContext context) {
     // Personalise the greeting once the user is authenticated after login.
@@ -107,7 +79,6 @@ class _HomeView extends StatelessWidget {
             greeting: greeting,
             avatarInitials: _initials(fullName),
             onSearchTap: () => context.push(AppRoute.search.path),
-            onLogoutTap: () => _logout(context),
           ),
           Expanded(
             child: BlocBuilder<HomeCubit, HomeState>(

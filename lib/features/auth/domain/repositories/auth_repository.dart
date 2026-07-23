@@ -26,6 +26,10 @@ abstract class AuthRepository {
   /// True if a valid session (access token) is stored.
   bool get isLoggedIn;
 
+  /// The cached signed-in user (name, phone, …) restored from local storage,
+  /// or null when no session is stored. Used to rehydrate state on app start.
+  AuthUser? get currentUser;
+
   /// Clears the stored session.
   Future<void> logout();
 }

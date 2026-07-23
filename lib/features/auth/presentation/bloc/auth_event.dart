@@ -7,6 +7,11 @@ abstract class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// App launched — restore any cached session/user into state.
+class AppStarted extends AuthEvent {
+  const AppStarted();
+}
+
 /// User submitted their phone number to receive an OTP.
 class OtpRequested extends AuthEvent {
   final String phoneNumber;

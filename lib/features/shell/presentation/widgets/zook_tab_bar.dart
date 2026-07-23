@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/cube_icon.dart';
+
+// Exact Feather-style icons from the design (stroke recoloured at render time).
+const _svgSearch =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+const _svgCart =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+const _svgBox =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>';
+const _svgUser =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
 class TabItemData {
-  final IconData? icon;
-
-  /// Optional custom vector icon (takes precedence over [icon]) — used for the
-  /// Feather-style isometric "box" on the Orders tab.
-  final Widget Function(Color color, double size)? iconBuilder;
+  final String svg;
   final String label;
   final int? badgeCount;
-  const TabItemData({
-    this.icon,
-    this.iconBuilder,
-    required this.label,
-    this.badgeCount,
-  }) : assert(icon != null || iconBuilder != null);
+  const TabItemData({required this.svg, required this.label, this.badgeCount});
 }
 
 /// Custom bottom tab bar matching the mockup (active indicator + cart badge).
@@ -33,15 +34,13 @@ class ZookTabBar extends StatelessWidget {
   });
 
   List<TabItemData> get _items => [
-        const TabItemData(icon: Icons.search, label: 'Search'),
+        const TabItemData(svg: _svgSearch, label: 'Search'),
         TabItemData(
-            icon: Icons.shopping_cart_outlined,
+            svg: _svgCart,
             label: 'Cart',
             badgeCount: cartCount > 0 ? cartCount : null),
-        TabItemData(
-            iconBuilder: (color, size) => CubeIcon(color: color, size: size),
-            label: 'Orders'),
-        const TabItemData(icon: Icons.person_outline, label: 'Profile'),
+        const TabItemData(svg: _svgBox, label: 'Orders'),
+        const TabItemData(svg: _svgUser, label: 'Profile'),
       ];
 
   @override
@@ -78,9 +77,6 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? AppColors.primary : AppColors.light;
-    final iconWidget = data.iconBuilder != null
-        ? data.iconBuilder!(color, 22)
-        : Icon(data.icon, size: 22, color: color);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -105,7 +101,12 @@ class _Tab extends StatelessWidget {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    SizedBox(height: 22, child: Center(child: iconWidget)),
+                    SvgPicture.string(
+                      data.svg,
+                      width: 22,
+                      height: 22,
+                      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                    ),
                     if (data.badgeCount != null)
                       Positioned(
                         top: -4,
