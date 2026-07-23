@@ -22,8 +22,8 @@ const List<ShopCategory> kCategories = [
   ShopCategory(id: 'electronics', label: 'Electronics', icon: '📱'),
   ShopCategory(id: 'gaming', label: 'Gaming', icon: '🎮'),
   ShopCategory(id: 'laptops', label: 'Laptops', icon: '💻'),
-  ShopCategory(id: 'furniture', label: 'Furniture', icon: '🪑'),
-  ShopCategory(id: 'clothing', label: 'Clothing', icon: '👕'),
+  ShopCategory(id: 'tablets', label: 'Tablets', icon: '📱'),
+  ShopCategory(id: 'tvs', label: 'TVs', icon: '📺'),
 ];
 
 const List<ShopCategory> kSubCategories = [

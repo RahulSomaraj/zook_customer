@@ -49,7 +49,7 @@ class SubCategoryGrid extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    categoryIconFor(cat.id),
+                    categoryIconFor(cat.slug ?? cat.label),
                     size: 18,
                     color: active ? AppColors.primary : AppColors.charcoal,
                   ),

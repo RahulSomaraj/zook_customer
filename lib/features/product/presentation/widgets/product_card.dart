@@ -172,7 +172,8 @@ class _VerifiedStrip extends StatelessWidget {
   }
 }
 
-/// White corner tab showing the grade, e.g. "B · GOOD" with a coloured rule.
+/// White corner tab showing the grade, e.g. "B · GOOD" with a coloured rule
+/// sitting a couple of pixels below the text (matches the browse mockup).
 class _GradeTab extends StatelessWidget {
   final ProductGrade grade;
   const _GradeTab({required this.grade});
@@ -180,21 +181,26 @@ class _GradeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(9, 5, 9, 4),
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
       decoration: const BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(10)),
       ),
-      child: Text(
-        '${grade.label} · ${grade.shortLabel.toUpperCase()}',
-        style: AppTextStyles.caption.copyWith(
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          color: AppColors.black,
-          letterSpacing: 0.4,
-          decoration: TextDecoration.underline,
-          decorationColor: grade.color,
-          decorationThickness: 2,
+      child: Container(
+        padding: const EdgeInsets.only(bottom: 3),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: grade.color, width: 2),
+          ),
+        ),
+        child: Text(
+          '${grade.label} · ${grade.shortLabel.toUpperCase()}',
+          style: AppTextStyles.caption.copyWith(
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            color: AppColors.black,
+            letterSpacing: 0.4,
+          ),
         ),
       ),
     );

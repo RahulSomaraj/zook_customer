@@ -13,14 +13,18 @@ import '../features/checkout/presentation/pages/order_confirmed_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/onboarding/presentation/pages/locale_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/orders/domain/entities/customer_order.dart';
+import '../features/orders/presentation/pages/order_tracking_page.dart';
 import '../features/orders/presentation/pages/orders_page.dart';
 import '../features/product/domain/entities/category.dart';
 import '../features/product/domain/entities/product.dart';
 import '../features/product/presentation/pages/product_detail_page.dart';
 import '../features/product/presentation/pages/product_list_page.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/search/presentation/pages/search_page.dart';
 import '../features/shell/presentation/pages/main_shell.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
+import '../features/wishlist/presentation/pages/favourites_page.dart';
 
 /// Named routes for the app. Keep paths in one place so navigation calls
 /// reference [AppRoute.<x>.path] rather than magic strings.
@@ -34,10 +38,13 @@ enum AppRoute {
   home('/home'),
   category('/home/category'),
   productList('/home/products'),
-  search('/search'),
+  search('/home/search'),
   cart('/cart'),
   orders('/orders'),
+  profile('/profile'),
+  favourites('/profile/favourites'),
   product('/product'),
+  orderTrack('/order-track'),
   checkout('/checkout'),
   orderConfirmed('/order-confirmed');
 
@@ -109,7 +116,7 @@ class AppRouter {
         builder: (context, state, navigationShell) =>
             MainShell(navigationShell: navigationShell),
         branches: [
-          // Tab 0 — Home (with nested category browse)
+          // Tab 0 — Search (the home/browse feed, with nested browse + search)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -142,25 +149,20 @@ class AppRouter {
                       );
                     },
                   ),
+                  GoRoute(
+                    path: 'search',
+                    name: AppRoute.search.name,
+                    builder: (context, state) => SearchPage(
+                      initialCategory: state.extra is ShopCategory
+                          ? state.extra as ShopCategory
+                          : null,
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
-          // Tab 1 — Search
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoute.search.path,
-                name: AppRoute.search.name,
-                builder: (context, state) => SearchPage(
-                  initialCategory: state.extra is ShopCategory
-                      ? state.extra as ShopCategory
-                      : null,
-                ),
-              ),
-            ],
-          ),
-          // Tab 2 — Cart
+          // Tab 1 — Cart
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -170,13 +172,30 @@ class AppRouter {
               ),
             ],
           ),
-          // Tab 3 — Orders
+          // Tab 2 — Orders
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: AppRoute.orders.path,
                 name: AppRoute.orders.name,
                 builder: (context, state) => const OrdersPage(),
+              ),
+            ],
+          ),
+          // Tab 3 — Profile (with nested Favourites)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoute.profile.path,
+                name: AppRoute.profile.name,
+                builder: (context, state) => const ProfilePage(),
+                routes: [
+                  GoRoute(
+                    path: 'favourites',
+                    name: AppRoute.favourites.name,
+                    builder: (context, state) => const FavouritesPage(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -189,6 +208,13 @@ class AppRouter {
         parentNavigatorKey: _rootKey,
         builder: (context, state) =>
             ProductDetailPage(product: state.extra as Product),
+      ),
+      GoRoute(
+        path: AppRoute.orderTrack.path,
+        name: AppRoute.orderTrack.name,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) =>
+            OrderTrackingPage(order: state.extra as CustomerOrder),
       ),
       GoRoute(
         path: AppRoute.checkout.path,

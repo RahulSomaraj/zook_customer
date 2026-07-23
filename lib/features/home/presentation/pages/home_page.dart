@@ -46,6 +46,24 @@ class _HomeView extends StatelessWidget {
         extra: ProductListArgs(title: title, products: products),
       );
 
+  /// First name from a full name, e.g. "Ahmed Hassan" -> "Ahmed".
+  String? _firstName(String? fullName) {
+    final n = fullName?.trim() ?? '';
+    if (n.isEmpty) return null;
+    return n.split(RegExp(r'\s+')).first;
+  }
+
+  /// Up to two initials from a full name, e.g. "Ahmed Hassan" -> "AH".
+  String? _initials(String? fullName) {
+    final n = fullName?.trim() ?? '';
+    if (n.isEmpty) return null;
+    final parts = n.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return null;
+    final first = parts.first[0];
+    final last = parts.length > 1 ? parts.last[0] : '';
+    return (first + last).toUpperCase();
+  }
+
   /// Confirms, clears the session + local wishlist, and returns to login.
   Future<void> _logout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -75,13 +93,20 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Personalise the greeting once the user is authenticated after login.
+    final fullName = context.watch<AuthBloc>().state.user?.fullName;
+    final firstName = _firstName(fullName);
+    final greeting =
+        firstName != null ? 'Good morning, $firstName 👋' : 'Good morning 👋';
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
         children: [
           HomeHeader(
-            greeting: 'Good morning 👋',
-            onSearchTap: () => context.go(AppRoute.search.path),
+            greeting: greeting,
+            avatarInitials: _initials(fullName),
+            onSearchTap: () => context.push(AppRoute.search.path),
             onLogoutTap: () => _logout(context),
           ),
           Expanded(

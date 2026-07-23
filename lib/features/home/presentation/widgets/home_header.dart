@@ -7,17 +7,23 @@ import '../../../../core/theme/app_text_styles.dart';
 /// Dark home header: logo, notifications, avatar, greeting, and a search entry.
 class HomeHeader extends StatelessWidget {
   final String greeting;
+
+  /// Two-letter initials shown in the avatar once the user is logged in.
+  /// Falls back to a person icon when null/empty.
+  final String? avatarInitials;
   final VoidCallback? onSearchTap;
   final VoidCallback? onLogoutTap;
   const HomeHeader({
     super.key,
     required this.greeting,
+    this.avatarInitials,
     this.onSearchTap,
     this.onLogoutTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasInitials = avatarInitials != null && avatarInitials!.isNotEmpty;
     return ClipRect(
       child: Stack(
         children: [
@@ -85,8 +91,16 @@ class HomeHeader extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
-                            child: const Icon(Icons.person,
-                                size: 18, color: AppColors.white),
+                            child: hasInitials
+                                ? Text(
+                                    avatarInitials!,
+                                    style: AppTextStyles.title.copyWith(
+                                      color: AppColors.white,
+                                      fontSize: 13,
+                                    ),
+                                  )
+                                : const Icon(Icons.person,
+                                    size: 18, color: AppColors.white),
                           ),
                           const SizedBox(width: 10),
                           GestureDetector(

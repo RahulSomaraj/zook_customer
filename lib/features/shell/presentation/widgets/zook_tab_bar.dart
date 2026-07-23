@@ -2,12 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/cube_icon.dart';
 
 class TabItemData {
-  final IconData icon;
+  final IconData? icon;
+
+  /// Optional custom vector icon (takes precedence over [icon]) — used for the
+  /// Feather-style isometric "box" on the Orders tab.
+  final Widget Function(Color color, double size)? iconBuilder;
   final String label;
   final int? badgeCount;
-  const TabItemData({required this.icon, required this.label, this.badgeCount});
+  const TabItemData({
+    this.icon,
+    this.iconBuilder,
+    required this.label,
+    this.badgeCount,
+  }) : assert(icon != null || iconBuilder != null);
 }
 
 /// Custom bottom tab bar matching the mockup (active indicator + cart badge).
@@ -23,13 +33,15 @@ class ZookTabBar extends StatelessWidget {
   });
 
   List<TabItemData> get _items => [
-        const TabItemData(icon: Icons.home_outlined, label: 'Home'),
         const TabItemData(icon: Icons.search, label: 'Search'),
         TabItemData(
             icon: Icons.shopping_cart_outlined,
             label: 'Cart',
             badgeCount: cartCount > 0 ? cartCount : null),
-        const TabItemData(icon: Icons.inventory_2_outlined, label: 'Orders'),
+        TabItemData(
+            iconBuilder: (color, size) => CubeIcon(color: color, size: size),
+            label: 'Orders'),
+        const TabItemData(icon: Icons.person_outline, label: 'Profile'),
       ];
 
   @override
@@ -44,7 +56,8 @@ class ZookTabBar extends StatelessWidget {
         child: Row(
           children: [
             for (var i = 0; i < _items.length; i++)
-              Expanded(child: _Tab(
+              Expanded(
+                  child: _Tab(
                 data: _items[i],
                 active: i == currentIndex,
                 onTap: () => onTap(i),
@@ -65,6 +78,9 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? AppColors.primary : AppColors.light;
+    final iconWidget = data.iconBuilder != null
+        ? data.iconBuilder!(color, 22)
+        : Icon(data.icon, size: 22, color: color);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -77,8 +93,8 @@ class _Tab extends StatelessWidget {
               height: 3,
               decoration: const BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(9999)),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(9999)),
               ),
             ),
           Padding(
@@ -89,7 +105,7 @@ class _Tab extends StatelessWidget {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(data.icon, size: 22, color: color),
+                    SizedBox(height: 22, child: Center(child: iconWidget)),
                     if (data.badgeCount != null)
                       Positioned(
                         top: -4,
@@ -117,7 +133,7 @@ class _Tab extends StatelessWidget {
                 Text(
                   data.label,
                   style: AppTextStyles.caption.copyWith(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: color,
                   ),
                 ),

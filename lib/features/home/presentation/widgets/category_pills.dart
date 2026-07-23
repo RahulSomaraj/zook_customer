@@ -66,7 +66,7 @@ class _Pill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              categoryIconFor(category.id),
+              categoryIconFor(category.slug ?? category.label),
               size: 20,
               color: active ? AppColors.white : AppColors.mid,
             ),
