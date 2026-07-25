@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../address/presentation/cubit/address_cubit.dart';
+import '../../../auth/domain/repositories/auth_repository.dart';
 import '../../../address/presentation/widgets/add_address_sheet.dart';
 import '../../../address/presentation/widgets/select_address_sheet.dart';
 import '../../../cart/domain/entities/cart_item.dart';
@@ -22,6 +23,20 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   int _payIndex = 0;
+
+  /// Social-signup users have no phone on file; delivery needs one. Mirrors
+  /// the backend PhoneVerifiedGuard on POST /customers/orders/checkout — when
+  /// checkout is wired to the API, also handle its 403
+  /// `PHONE_VERIFICATION_REQUIRED` with this same page.
+  Future<void> _placeOrder(BuildContext context) async {
+    final user = sl<AuthRepository>().currentUser;
+    if (user != null && user.phoneNumber.isEmpty) {
+      final verified =
+          await context.push<bool>(AppRoute.verifyPhone.path) ?? false;
+      if (!verified || !context.mounted) return;
+    }
+    if (context.mounted) context.go(AppRoute.orderConfirmed.path);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,8 +183,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () =>
-                                  context.go(AppRoute.orderConfirmed.path),
+                              onPressed: () => _placeOrder(context),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 elevation: 0,

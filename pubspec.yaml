@@ -39,6 +39,14 @@ dependencies:
   # Functional error handling
   dartz: ^0.10.1
 
+  # Auto OTP detection — Android SMS User Consent API (works with any OTP
+  # SMS, no app-hash needed, so it's Twilio Verify compatible).
+  smart_auth: ^3.1.1
+
+  # Google sign-in via Supabase (native ID-token flow, no browser redirect).
+  supabase_flutter: ^2.8.0
+  google_sign_in: ^6.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

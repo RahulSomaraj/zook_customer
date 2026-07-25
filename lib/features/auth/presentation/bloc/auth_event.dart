@@ -48,6 +48,32 @@ class RegisterRequested extends AuthEvent {
   List<Object?> get props => [fullName, email, countryCode, phone];
 }
 
+/// User tapped "Continue with Google" — runs the native Google → Supabase →
+/// backend exchange and signs them in (auto-creates the account first time).
+class GoogleSignInRequested extends AuthEvent {
+  const GoogleSignInRequested();
+}
+
+/// Authenticated user (e.g. Google signup) asked to attach a phone number —
+/// sends the attach OTP. Distinct from [OtpRequested], which is a login flow.
+class PhoneAttachOtpRequested extends AuthEvent {
+  final String phoneNumber;
+  const PhoneAttachOtpRequested(this.phoneNumber);
+
+  @override
+  List<Object?> get props => [phoneNumber];
+}
+
+/// Authenticated user submitted the attach OTP code.
+class PhoneAttachSubmitted extends AuthEvent {
+  final String phoneNumber;
+  final String otp;
+  const PhoneAttachSubmitted({required this.phoneNumber, required this.otp});
+
+  @override
+  List<Object?> get props => [phoneNumber, otp];
+}
+
 /// User asked to sign out. Clears the stored session.
 class LogoutRequested extends AuthEvent {
   const LogoutRequested();

@@ -6,6 +6,7 @@ import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/otp_page.dart';
 import '../features/auth/presentation/pages/signup_page.dart';
+import '../features/auth/presentation/pages/verify_phone_page.dart';
 import '../features/cart/presentation/pages/cart_page.dart';
 import '../features/category/presentation/pages/category_browse_page.dart';
 import '../features/checkout/presentation/pages/checkout_page.dart';
@@ -46,7 +47,8 @@ enum AppRoute {
   product('/product'),
   orderTrack('/order-track'),
   checkout('/checkout'),
-  orderConfirmed('/order-confirmed');
+  orderConfirmed('/order-confirmed'),
+  verifyPhone('/verify-phone');
 
   const AppRoute(this.path);
   final String path;
@@ -227,6 +229,12 @@ class AppRouter {
         name: AppRoute.orderConfirmed.name,
         parentNavigatorKey: _rootKey,
         builder: (context, state) => const OrderConfirmedPage(),
+      ),
+      GoRoute(
+        path: AppRoute.verifyPhone.path,
+        name: AppRoute.verifyPhone.name,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const VerifyPhonePage(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

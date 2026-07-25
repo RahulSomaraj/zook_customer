@@ -5,6 +5,7 @@ import '../network/dio_client.dart';
 import '../../app/app_router.dart';
 import '../../features/auth/data/datasources/auth_local_data_source.dart';
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
+import '../../features/auth/data/datasources/google_auth_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/logout.dart';
@@ -60,8 +61,15 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<AuthLocalDataSource>(
     () => AuthLocalDataSourceImpl(prefs: sl()),
   );
+  sl.registerLazySingleton<GoogleAuthDataSource>(
+    () => GoogleAuthDataSourceImpl(),
+  );
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),
+    () => AuthRepositoryImpl(
+      remoteDataSource: sl(),
+      localDataSource: sl(),
+      googleAuthDataSource: sl(),
+    ),
   );
   // Domain
   sl.registerLazySingleton(() => Register(sl()));

@@ -23,6 +23,21 @@ abstract class AuthRepository {
     required String otp,
   });
 
+  /// Native Google sign-in (via Supabase), exchanges for our session tokens,
+  /// persists them and returns the user.
+  Future<Either<Failure, AuthUser>> signInWithGoogle();
+
+  /// Sends an OTP to attach [phoneNumber] to the current signed-in user.
+  /// Returns the dev code when the API provides one (UAT), otherwise null.
+  Future<Either<Failure, String?>> sendPhoneAttachOtp(String phoneNumber);
+
+  /// Verifies the attach OTP; the API sets phone + phoneVerified on the
+  /// current user. Used to unlock checkout after a social signup.
+  Future<Either<Failure, Unit>> verifyPhoneAttach({
+    required String phoneNumber,
+    required String otp,
+  });
+
   /// True if a valid session (access token) is stored.
   bool get isLoggedIn;
 

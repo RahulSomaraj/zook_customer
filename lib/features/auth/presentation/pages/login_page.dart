@@ -50,10 +50,13 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state.status == AuthStatus.otpSent) {
             context.push(AppRoute.otp.path, extra: state.phoneNumber);
+          } else if (state.status == AuthStatus.authenticated) {
+            // Google sign-in completes here (no OTP page in between).
+            context.go(AppRoute.home.path);
           } else if (state.status == AuthStatus.failure) {
             showZookAlert(context,
                 type: ZookAlertType.error,
-                title: 'Could not send code',
+                title: 'Sign-in failed',
                 message: state.errorMessage ?? 'Please try again.');
           }
         },
@@ -161,7 +164,11 @@ class _LoginPageState extends State<LoginPage> {
                       SocialButton(
                         label: AppStrings.continueWithGoogle,
                         icon: const _GoogleGlyph(),
-                        onPressed: () {},
+                        onPressed: loading
+                            ? () {}
+                            : () => context
+                                .read<AuthBloc>()
+                                .add(const GoogleSignInRequested()),
                       ),
                       const SizedBox(height: 24),
                       Center(
