@@ -7,6 +7,10 @@ IconData categoryIconFor(String key) {
   final k = key.toLowerCase().trim();
   bool has(String s) => k.contains(s);
 
+  // iPods / media players before the audio + phone checks.
+  if (has('ipod') || has('music') || has('media player')) {
+    return Icons.music_note;
+  }
   // Audio checked before "phone" so "headphones" doesn't match smartphone.
   if (has('audio') ||
       has('headphone') ||

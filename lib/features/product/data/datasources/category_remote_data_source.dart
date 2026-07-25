@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_constants.dart';
@@ -17,10 +19,15 @@ class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
   Future<List<CategoryModel>> getCategories() async {
     try {
       final res = await client.dio.get(ApiConstants.categories);
-      final map = (res.data as Map).cast<String, dynamic>();
+      // Some responses arrive as a raw JSON string (content-type quirks) —
+      // decode defensively so a valid body is never dropped to the fallback.
+      final raw = res.data;
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      final map = (decoded as Map).cast<String, dynamic>();
       if (map['success'] == true && map['data'] is List) {
         return (map['data'] as List)
-            .map((e) => CategoryModel.fromJson((e as Map).cast<String, dynamic>()))
+            .map((e) =>
+                CategoryModel.fromJson((e as Map).cast<String, dynamic>()))
             .toList();
       }
       throw ServerException(_messageFrom(map));
