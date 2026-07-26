@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smart_auth/smart_auth.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/phone_input_field.dart';
@@ -105,7 +106,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
           color: AppColors.mid,
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        title: Text('Verify phone', style: AppTextStyles.title.copyWith(fontSize: 18)),
+        title: Text(AppStrings.verifyPhoneTitle, style: AppTextStyles.title.copyWith(fontSize: 18)),
       ),
       body: SafeArea(
         child: BlocConsumer<AuthBloc, AuthState>(
@@ -122,8 +123,8 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
               }
               showZookAlert(context,
                   type: ZookAlertType.error,
-                  title: 'Verification failed',
-                  message: state.errorMessage ?? 'Please try again.');
+                  title: AppStrings.verificationFailed,
+                  message: state.errorMessage ?? AppStrings.pleaseTryAgain);
             }
           },
           builder: (context, state) {
@@ -135,15 +136,15 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
                 children: [
                   Text(
                     _codeStep
-                        ? 'Enter the 6-digit code'
-                        : 'Add your mobile number',
+                        ? AppStrings.enterCodeTitle
+                        : AppStrings.addPhoneTitle,
                     style: AppTextStyles.title.copyWith(fontSize: 22),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _codeStep
-                        ? 'Sent to ${state.phoneNumber}'
-                        : 'We need a verified phone number to deliver your order.',
+                        ? AppStrings.sentTo(state.phoneNumber)
+                        : AppStrings.phoneNeededForDelivery,
                     style: AppTextStyles.subtitle,
                   ),
                   const SizedBox(height: 24),
@@ -159,7 +160,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
                     ),
                     const SizedBox(height: 24),
                     PrimaryButton(
-                      label: 'Send code',
+                      label: AppStrings.sendCode,
                       isLoading: loading,
                       onPressed: _sendCode,
                     ),
@@ -177,7 +178,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
                       const SizedBox(height: 12),
                       ZookAlert(
                         type: ZookAlertType.info,
-                        title: 'UAT dev code',
+                        title: AppStrings.uatDevCode,
                         message: state.devOtp!,
                       ),
                     ],
@@ -192,7 +193,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
                         GestureDetector(
                           onTap: _secondsLeft == 0 && !loading ? _sendCode : null,
                           child: Text(
-                            'Resend code',
+                            AppStrings.resendCode,
                             style: AppTextStyles.label.copyWith(
                               fontSize: 13,
                               letterSpacing: 0,
@@ -206,7 +207,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
                     ),
                     const SizedBox(height: 20),
                     PrimaryButton(
-                      label: 'Verify & continue',
+                      label: AppStrings.verifyAndContinue,
                       isLoading: loading,
                       onPressed: _verify,
                     ),

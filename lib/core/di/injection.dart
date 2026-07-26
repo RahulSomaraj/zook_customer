@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../locale/locale_cubit.dart';
 import '../network/dio_client.dart';
 import '../../app/app_router.dart';
 import '../../features/auth/data/datasources/auth_local_data_source.dart';
@@ -40,12 +41,18 @@ Future<void> initDependencies() async {
   // ---- External ----
   final prefs = await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => prefs);
+
+  // Language (en/ar). Constructed eagerly so AppStrings/AppTextStyles are
+  // bound to the persisted locale before the first frame.
+  sl.registerLazySingleton<LocaleCubit>(() => LocaleCubit(prefs: prefs));
   // Dio attaches the auth bearer token via the local auth store (resolved
   // lazily, so registration order with AuthLocalDataSource doesn't matter).
   // On a 401 it clears the session and routes to the sign-in page.
   sl.registerLazySingleton<DioClient>(
     () => DioClient(
       tokenProvider: () => sl<AuthLocalDataSource>().accessToken,
+      // API localizes error messages from this header (en / ar).
+      languageProvider: () => sl<LocaleCubit>().state.languageCode,
       onUnauthorized: () {
         sl<AuthLocalDataSource>().clear();
         AppRouter.router.go(AppRoute.login.path);

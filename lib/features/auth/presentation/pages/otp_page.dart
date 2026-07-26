@@ -120,8 +120,8 @@ class _OtpPageState extends State<OtpPage> {
               }
               showZookAlert(context,
                   type: ZookAlertType.error,
-                  title: 'Verification failed',
-                  message: state.errorMessage ?? 'Please try again.');
+                  title: AppStrings.verificationFailed,
+                  message: state.errorMessage ?? AppStrings.pleaseTryAgain);
             }
           },
           builder: (context, state) {

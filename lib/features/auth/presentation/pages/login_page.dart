@@ -56,8 +56,8 @@ class _LoginPageState extends State<LoginPage> {
           } else if (state.status == AuthStatus.failure) {
             showZookAlert(context,
                 type: ZookAlertType.error,
-                title: 'Sign-in failed',
-                message: state.errorMessage ?? 'Please try again.');
+                title: AppStrings.signInFailed,
+                message: state.errorMessage ?? AppStrings.pleaseTryAgain);
           }
         },
         builder: (context, state) {

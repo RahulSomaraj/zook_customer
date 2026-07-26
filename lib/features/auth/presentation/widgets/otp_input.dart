@@ -115,7 +115,10 @@ class _OtpInputState extends State<OtpInput> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Codes always read left-to-right, even inside an Arabic (RTL) layout.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
       children: List.generate(widget.length, (i) {
         final filled = _controllers[i].text.isNotEmpty;
         final active = _focusNodes[i].hasFocus;
@@ -172,6 +175,7 @@ class _OtpInputState extends State<OtpInput> {
           ),
         );
       }),
+      ),
     );
   }
 }

@@ -163,6 +163,14 @@ class ProfilePage extends StatelessWidget {
                   sub: 'FAQs, live chat, contact',
                   onTap: () => _soon(context),
                 ),
+                _MenuItem(
+                  icon: Icons.language,
+                  iconColor: AppColors.mid,
+                  iconBg: AppColors.surface,
+                  label: AppStrings.languageLabel,
+                  sub: 'English · العربية',
+                  onTap: () => context.push(AppRoute.locale.path),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: GestureDetector(
@@ -183,7 +191,7 @@ class ProfilePage extends StatelessWidget {
                           const Icon(Icons.logout,
                               size: 16, color: AppColors.error),
                           const SizedBox(width: 8),
-                          Text('Log out',
+                          Text(AppStrings.logOut,
                               style: AppTextStyles.body.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.error)),

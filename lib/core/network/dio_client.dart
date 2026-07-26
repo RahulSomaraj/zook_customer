@@ -12,12 +12,20 @@ class DioClient {
   /// Injected so the client stays decoupled from the auth layer.
   final String? Function()? tokenProvider;
 
+  /// Returns the current UI language code ('en' / 'ar'). Sent as
+  /// Accept-Language so the API localizes error messages.
+  final String Function()? languageProvider;
+
   /// Called when an authenticated request comes back 401 (expired/invalid
   /// session). Wired to clear the session and route to the sign-in page.
   final void Function()? onUnauthorized;
 
-  DioClient({Dio? dio, this.tokenProvider, this.onUnauthorized})
-      : dio = dio ?? Dio() {
+  DioClient({
+    Dio? dio,
+    this.tokenProvider,
+    this.languageProvider,
+    this.onUnauthorized,
+  }) : dio = dio ?? Dio() {
     this.dio
       ..options.baseUrl = ApiConstants.baseUrl
       ..options.connectTimeout = const Duration(seconds: 20)
@@ -29,6 +37,10 @@ class DioClient {
             final token = tokenProvider?.call();
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
+            }
+            final lang = languageProvider?.call();
+            if (lang != null && lang.isNotEmpty) {
+              options.headers['Accept-Language'] = lang;
             }
             handler.next(options);
           },

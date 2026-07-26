@@ -40,7 +40,11 @@ class PhoneInputField extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Row(
+          // Phone numbers (dial code + digits) always read left-to-right,
+          // even inside an Arabic (RTL) layout.
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
             children: [
               Container(
                 padding:
@@ -81,6 +85,7 @@ class PhoneInputField extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
         if (hasError) ...[

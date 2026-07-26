@@ -10,6 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Version pinned by flutter_localizations.
+  intl: any
 
   cupertino_icons: ^1.0.8
 
@@ -58,6 +62,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Runs gen-l10n on build: lib/l10n/*.arb → lib/l10n/gen/app_localizations*.
+  generate: true
 
   assets:
     - assets/images/

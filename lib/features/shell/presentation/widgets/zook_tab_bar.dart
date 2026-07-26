@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
@@ -34,13 +35,13 @@ class ZookTabBar extends StatelessWidget {
   });
 
   List<TabItemData> get _items => [
-        const TabItemData(svg: _svgSearch, label: 'Search'),
+        TabItemData(svg: _svgSearch, label: AppStrings.tabSearch),
         TabItemData(
             svg: _svgCart,
-            label: 'Cart',
+            label: AppStrings.tabCart,
             badgeCount: cartCount > 0 ? cartCount : null),
-        const TabItemData(svg: _svgBox, label: 'Orders'),
-        const TabItemData(svg: _svgUser, label: 'Profile'),
+        TabItemData(svg: _svgBox, label: AppStrings.tabOrders),
+        TabItemData(svg: _svgUser, label: AppStrings.tabProfile),
       ];
 
   @override
