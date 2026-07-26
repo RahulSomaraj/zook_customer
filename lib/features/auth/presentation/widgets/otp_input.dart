@@ -13,7 +13,7 @@ class OtpInput extends StatefulWidget {
 
   const OtpInput({
     super.key,
-    this.length = 4,
+    this.length = 6,
     this.onChanged,
     this.onCompleted,
   });
@@ -72,7 +72,7 @@ class _OtpInputState extends State<OtpInput> {
         final highlighted = filled || active;
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(right: i == widget.length - 1 ? 0 : 10),
+            padding: EdgeInsets.only(right: i == widget.length - 1 ? 0 : 8),
             child: Container(
               height: 56,
               decoration: BoxDecoration(

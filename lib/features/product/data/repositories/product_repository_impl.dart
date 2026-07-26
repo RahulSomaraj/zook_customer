@@ -7,24 +7,38 @@ import '../../domain/entities/product_detail.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_data_source.dart';
 
-/// Live products repository. `recently-listed`, `top-picks` and category
-/// browse hit the API. Search reuses the recently-listed feed (filtered
-/// client-side) until a dedicated endpoint exists.
+/// Live products repository. Every listing (home "recently listed" / "top
+/// picks", category browse and search) is served by the single `/products`
+/// endpoint with context-appropriate query params.
 class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDataSource remoteDataSource;
   ProductRepositoryImpl({required this.remoteDataSource});
 
   @override
   Future<Either<Failure, List<Product>>> getRecentlyListed() =>
-      _guard(remoteDataSource.getRecentlyListed);
+      _guard(() => remoteDataSource.getProducts(sort: 'recent', limit: 20));
 
   @override
   Future<Either<Failure, List<Product>>> getTopPicks() =>
-      _guard(remoteDataSource.getTopPicks);
+      _guard(() => remoteDataSource.getProducts(sort: 'top_picks', limit: 20));
 
   @override
-  Future<Either<Failure, List<Product>>> getByCategory(String categoryId) =>
-      _guard(() => remoteDataSource.getByCategory(categoryId));
+  Future<Either<Failure, List<Product>>> getByCategory(String categoryId,
+          {String sort = 'recent'}) =>
+      _guard(() => remoteDataSource.getProducts(
+            categoryId: categoryId,
+            sort: sort,
+            limit: 20,
+          ));
+
+  @override
+  Future<Either<Failure, List<Product>>> search(String query,
+          {String sort = 'recent'}) =>
+      _guard(() => remoteDataSource.getProducts(
+            search: query,
+            sort: sort,
+            limit: 20,
+          ));
 
   @override
   Future<Either<Failure, ProductDetail>> getProductDetail(String id) async {
@@ -36,19 +50,6 @@ class ProductRepositoryImpl implements ProductRepository {
       return const Left(ServerFailure());
     }
   }
-
-  @override
-  Future<Either<Failure, List<Product>>> search(String query) =>
-      _guard(() async {
-        final items = await remoteDataSource.getRecentlyListed();
-        final q = query.toLowerCase().trim();
-        if (q.isEmpty) return items;
-        return items
-            .where((p) =>
-                p.name.toLowerCase().contains(q) ||
-                p.brand.toLowerCase().contains(q))
-            .toList();
-      });
 
   Future<Either<Failure, List<Product>>> _guard(
     Future<List<Product>> Function() action,

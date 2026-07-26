@@ -6,10 +6,12 @@ import '../../../../app/app_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/skeleton.dart';
+import '../../../product/domain/entities/product_sort.dart';
+import '../widgets/subcategory_grid.dart';
 import '../../../wishlist/presentation/widgets/wishlist_product_grid.dart';
 import '../cubit/category_cubit.dart';
 import '../widgets/grade_filter_row.dart';
-import '../widgets/subcategory_grid.dart';
 
 class CategoryBrowsePage extends StatelessWidget {
   final String categoryId;
@@ -23,17 +25,17 @@ class CategoryBrowsePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => CategoryCubit(repository: sl())..load(categoryId),
-      child: _CategoryView(title: categoryName),
+      create: (_) => CategoryCubit(
+        productRepository: sl(),
+        categoryRepository: sl(),
+      )..load(categoryId, categoryName),
+      child: const _CategoryView(),
     );
   }
 }
 
 class _CategoryView extends StatelessWidget {
-  final String title;
-  const _CategoryView({required this.title});
-
-  String get _title => title;
+  const _CategoryView();
 
   @override
   Widget build(BuildContext context) {
@@ -44,25 +46,24 @@ class _CategoryView extends StatelessWidget {
         bottom: false,
         child: BlocBuilder<CategoryCubit, CategoryState>(
           builder: (context, state) {
+            final title = state.selectedCategoryName;
             return Column(
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   color: AppColors.white,
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => context.canPop()
-                            ? context.pop()
-                            : null,
+                        onTap: () => context.canPop() ? context.pop() : null,
                         behavior: HitTestBehavior.opaque,
                         child: const Icon(Icons.arrow_back,
                             size: 22, color: AppColors.mid),
                       ),
                       const SizedBox(width: 10),
-                      Text(_title,
+                      Text(title,
                           style: AppTextStyles.title.copyWith(fontSize: 17)),
                       const Spacer(),
                       Text('${state.products.length} items',
@@ -75,11 +76,14 @@ class _CategoryView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top grid — always visible
-                        SubCategoryGrid(
-                          selectedIndex: state.selectedSubCategoryIndex,
-                          onSelected: cubit.selectSubCategory,
-                        ),
+                        // Category blocks — same list as home (old grid design),
+                        // with the tapped category highlighted.
+                        if (state.categories.isNotEmpty)
+                          SubCategoryGrid(
+                            categories: state.categories,
+                            selectedId: state.selectedCategoryId,
+                            onSelected: cubit.selectCategory,
+                          ),
                         GradeFilterRow(
                           selected: state.gradeFilter,
                           onSelected: cubit.selectGrade,
@@ -90,28 +94,31 @@ class _CategoryView extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '$_title · ${state.filtered.length} items',
+                                '$title · ${state.filtered.length} items',
                                 style:
                                     AppTextStyles.title.copyWith(fontSize: 16),
                               ),
-                              Text('Sort ↕',
+                              GestureDetector(
+                                onTap: () => cubit.selectSort(
+                                    state.sort == ProductSort.priceHigh
+                                        ? ProductSort.priceLow
+                                        : ProductSort.priceHigh),
+                                behavior: HitTestBehavior.opaque,
+                                child: Text(
+                                  'Sort: Price '
+                                  '${state.sort == ProductSort.priceHigh ? '↓' : '↑'}',
                                   style: AppTextStyles.label.copyWith(
                                       fontSize: 12,
                                       letterSpacing: 0,
-                                      color: AppColors.primary)),
+                                      color: AppColors.primary),
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        // Products area — loader / empty / grid
                         if (state.status == CategoryStatus.loading ||
                             state.status == CategoryStatus.initial)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 48),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                  color: AppColors.primary),
-                            ),
-                          )
+                          const ProductGridSkeleton()
                         else if (state.filtered.isEmpty)
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 40, 16, 40),

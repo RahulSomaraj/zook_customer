@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_router.dart';
-import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/countries.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -28,6 +28,7 @@ class _SignupPageState extends State<SignupPage> {
   String? _nameError;
   String? _emailError;
   String? _phoneError;
+  Country _country = kUae;
 
   static final _emailRegExp =
       RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
@@ -46,7 +47,7 @@ class _SignupPageState extends State<SignupPage> {
     final emailError = _emailRegExp.hasMatch(_emailController.text.trim())
         ? null
         : AppStrings.invalidEmail;
-    final phoneError = AppConstants.isValidMobile(_phoneController.text)
+    final phoneError = _country.isValidMobile(_phoneController.text)
         ? null
         : AppStrings.invalidPhone;
 
@@ -61,8 +62,8 @@ class _SignupPageState extends State<SignupPage> {
     context.read<AuthBloc>().add(RegisterRequested(
           fullName: _nameController.text.trim(),
           email: _emailController.text.trim(),
-          countryCode: AppConstants.countryCode,
-          phone: AppConstants.nationalDigits(_phoneController.text),
+          countryCode: _country.code,
+          phone: _country.nationalDigits(_phoneController.text),
         ));
   }
 
@@ -138,7 +139,12 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 6),
                   PhoneInputField(
                     controller: _phoneController,
-                    hint: AppStrings.mobileHint,
+                    country: _country,
+                    onCountryChanged: (c) => setState(() {
+                      _country = c;
+                      _phoneController.clear();
+                      _phoneError = null;
+                    }),
                     hintStyle: hintStyle,
                     errorText: _phoneError,
                     onChanged: (_) {

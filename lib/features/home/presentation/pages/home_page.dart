@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/app_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../product/domain/entities/category.dart';
 import '../../../product/domain/entities/product.dart';
@@ -85,9 +86,7 @@ class _HomeView extends StatelessWidget {
               builder: (context, state) {
                 if (state.status == HomeStatus.loading ||
                     state.status == HomeStatus.initial) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
+                  return const HomeContentSkeleton();
                 }
                 if (state.status == HomeStatus.failure) {
                   return Center(child: Text(state.errorMessage ?? 'Error'));

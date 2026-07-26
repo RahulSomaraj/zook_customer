@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/app_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
@@ -505,12 +506,17 @@ class _DetailReportState extends State<_DetailReport> {
           ),
           if (_open) ...[
             if (widget.loading)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 2,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                child: Shimmer(
+                  child: Row(
+                    children: const [
+                      SkeletonBox(width: 72, height: 72, radius: 10),
+                      SizedBox(width: 8),
+                      SkeletonBox(width: 72, height: 72, radius: 10),
+                      SizedBox(width: 8),
+                      SkeletonBox(width: 72, height: 72, radius: 10),
+                    ],
                   ),
                 ),
               )

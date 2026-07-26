@@ -51,7 +51,7 @@ class _OtpPageState extends State<OtpPage> {
   }
 
   void _verify() {
-    if (_code.length < 4) return;
+    if (_code.length < 6) return;
     context
         .read<AuthBloc>()
         .add(OtpSubmitted(phoneNumber: widget.phoneNumber, otp: _code));
@@ -121,18 +121,10 @@ class _OtpPageState extends State<OtpPage> {
                   ),
                   const SizedBox(height: 28),
                   OtpInput(
-                    length: 4,
+                    length: 6,
                     onChanged: (v) => _code = v,
                     onCompleted: (v) => _code = v,
                   ),
-                  if (state.devOtp != null && state.devOtp!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    ZookAlert(
-                      type: ZookAlertType.info,
-                      title: 'UAT dev code',
-                      message: state.devOtp!,
-                    ),
-                  ],
                   const SizedBox(height: 28),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

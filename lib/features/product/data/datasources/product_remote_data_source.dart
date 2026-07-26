@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_constants.dart';
@@ -7,9 +9,18 @@ import '../models/product_detail_model.dart';
 import '../models/product_model.dart';
 
 abstract class ProductRemoteDataSource {
-  Future<List<ProductModel>> getRecentlyListed();
-  Future<List<ProductModel>> getTopPicks();
-  Future<List<ProductModel>> getByCategory(String categoryId);
+  /// Single products listing endpoint used everywhere (home feeds, category
+  /// browse, search). Callers pass whichever filters apply to their context.
+  Future<List<ProductModel>> getProducts({
+    int page,
+    int limit,
+    String? sort, // recent | oldest | price_low | price_high | top_picks
+    String? categoryId,
+    num? minPrice,
+    num? maxPrice,
+    String? search,
+  });
+
   Future<ProductDetailModel> getProductDetail(String id);
 }
 
@@ -18,24 +29,32 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   ProductRemoteDataSourceImpl({required this.client});
 
   @override
-  Future<List<ProductModel>> getRecentlyListed() =>
-      _fetchItems(ApiConstants.recentlyListed);
-
-  @override
-  Future<List<ProductModel>> getTopPicks() =>
-      _fetchItems(ApiConstants.topPicks);
-
-  @override
-  Future<List<ProductModel>> getByCategory(String categoryId) => _fetchItems(
-        ApiConstants.products,
-        query: {'category_id': categoryId},
-      );
+  Future<List<ProductModel>> getProducts({
+    int page = 1,
+    int limit = 20,
+    String? sort,
+    String? categoryId,
+    num? minPrice,
+    num? maxPrice,
+    String? search,
+  }) {
+    final query = <String, dynamic>{'page': page, 'limit': limit};
+    if (sort != null && sort.isNotEmpty) query['sort'] = sort;
+    if (categoryId != null && categoryId.isNotEmpty) {
+      query['category_id'] = categoryId;
+    }
+    if (minPrice != null) query['min_price'] = minPrice;
+    if (maxPrice != null) query['max_price'] = maxPrice;
+    final q = search?.trim() ?? '';
+    if (q.isNotEmpty) query['search'] = q;
+    return _fetchItems(ApiConstants.products, query: query);
+  }
 
   @override
   Future<ProductDetailModel> getProductDetail(String id) async {
     try {
       final res = await client.dio.get('${ApiConstants.products}/$id');
-      final map = (res.data as Map).cast<String, dynamic>();
+      final map = _asMap(res.data);
       if (map['success'] == true && map['data'] != null) {
         return ProductDetailModel.fromJson(
             (map['data'] as Map).cast<String, dynamic>());
@@ -57,7 +76,7 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   }) async {
     try {
       final res = await client.dio.get(path, queryParameters: query);
-      final map = (res.data as Map).cast<String, dynamic>();
+      final map = _asMap(res.data);
       if (map['success'] == true && map['data'] != null) {
         final data = (map['data'] as Map).cast<String, dynamic>();
         final items = (data['items'] as List?) ?? const [];
@@ -77,6 +96,12 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
       }
       throw ServerException(e.message ?? 'Network error. Please try again.');
     }
+  }
+
+  /// Decodes a response body that may arrive as a Map or a raw JSON string.
+  Map<String, dynamic> _asMap(dynamic raw) {
+    final decoded = raw is String ? jsonDecode(raw) : raw;
+    return (decoded as Map).cast<String, dynamic>();
   }
 
   String _messageFrom(Map<String, dynamic> map) {

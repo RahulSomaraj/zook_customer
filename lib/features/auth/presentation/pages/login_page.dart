@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../app/app_router.dart';
-import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/countries.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -24,6 +24,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _phoneController = TextEditingController();
   String? _phoneError;
+  Country _country = kUae;
 
   @override
   void dispose() {
@@ -32,14 +33,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _continue() {
-    if (!AppConstants.isValidMobile(_phoneController.text)) {
+    if (!_country.isValidMobile(_phoneController.text)) {
       setState(() => _phoneError = AppStrings.invalidPhone);
       return;
     }
     setState(() => _phoneError = null);
     context
         .read<AuthBloc>()
-        .add(OtpRequested(AppConstants.toE164(_phoneController.text)));
+        .add(OtpRequested(_country.toE164(_phoneController.text)));
   }
 
   @override
@@ -123,6 +124,12 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 6),
                       PhoneInputField(
                         controller: _phoneController,
+                        country: _country,
+                        onCountryChanged: (c) => setState(() {
+                          _country = c;
+                          _phoneController.clear();
+                          _phoneError = null;
+                        }),
                         errorText: _phoneError,
                         onChanged: (_) {
                           if (_phoneError != null) {

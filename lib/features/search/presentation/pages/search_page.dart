@@ -6,7 +6,9 @@ import '../../../../app/app_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../../product/domain/entities/category.dart';
+import '../../../product/domain/entities/product_sort.dart';
 import '../../../product/presentation/widgets/product_list_card.dart';
 import '../../../wishlist/presentation/cubit/wishlist_cubit.dart';
 import '../cubit/search_cubit.dart';
@@ -133,20 +135,25 @@ class _SearchViewState extends State<_SearchView> {
                         style: AppTextStyles.body.copyWith(
                             fontSize: 13, fontWeight: FontWeight.w700),
                       ),
-                      Text('Sort: Price ↑',
+                      GestureDetector(
+                        onTap: () => cubit.togglePriceSort(),
+                        behavior: HitTestBehavior.opaque,
+                        child: Text(
+                          'Sort: Price '
+                          '${state.sort == ProductSort.priceHigh ? '↓' : '↑'}',
                           style: AppTextStyles.label.copyWith(
                               fontSize: 12,
                               letterSpacing: 0,
-                              color: AppColors.primary)),
+                              color: AppColors.primary),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 // Results
                 Expanded(
                   child: state.status == SearchStatus.loading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.primary))
+                      ? const ProductListSkeleton()
                       : BlocBuilder<WishlistCubit, WishlistState>(
                           builder: (context, wl) {
                             WidgetsBinding.instance.addPostFrameCallback(

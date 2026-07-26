@@ -7,6 +7,7 @@ class SearchState extends Equatable {
   final String query;
   final int activeFilterIndex;
   final List<ShopCategory> categories;
+  final ProductSort sort;
   final List<Product> results;
   final String? errorMessage;
 
@@ -15,6 +16,7 @@ class SearchState extends Equatable {
     this.query = '',
     this.activeFilterIndex = 0,
     this.categories = const [],
+    this.sort = ProductSort.priceLow,
     this.results = const [],
     this.errorMessage,
   });
@@ -37,6 +39,7 @@ class SearchState extends Equatable {
     String? query,
     int? activeFilterIndex,
     List<ShopCategory>? categories,
+    ProductSort? sort,
     List<Product>? results,
     String? errorMessage,
   }) {
@@ -45,12 +48,20 @@ class SearchState extends Equatable {
       query: query ?? this.query,
       activeFilterIndex: activeFilterIndex ?? this.activeFilterIndex,
       categories: categories ?? this.categories,
+      sort: sort ?? this.sort,
       results: results ?? this.results,
       errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [status, query, activeFilterIndex, categories, results, errorMessage];
+  List<Object?> get props => [
+        status,
+        query,
+        activeFilterIndex,
+        categories,
+        sort,
+        results,
+        errorMessage,
+      ];
 }

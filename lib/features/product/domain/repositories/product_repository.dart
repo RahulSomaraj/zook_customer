@@ -8,7 +8,8 @@ import '../entities/product_detail.dart';
 abstract class ProductRepository {
   Future<Either<Failure, List<Product>>> getRecentlyListed();
   Future<Either<Failure, List<Product>>> getTopPicks();
-  Future<Either<Failure, List<Product>>> getByCategory(String categoryId);
-  Future<Either<Failure, List<Product>>> search(String query);
+  Future<Either<Failure, List<Product>>> getByCategory(String categoryId,
+      {String sort});
+  Future<Either<Failure, List<Product>>> search(String query, {String sort});
   Future<Either<Failure, ProductDetail>> getProductDetail(String id);
 }
