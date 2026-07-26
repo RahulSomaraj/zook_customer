@@ -9,12 +9,17 @@ import '../../domain/entities/cart_item.dart';
 class CartItemTile extends StatelessWidget {
   final CartItem item;
   final VoidCallback onRemove;
-  const CartItemTile({super.key, required this.item, required this.onRemove});
+  final VoidCallback? onTap;
+  const CartItemTile(
+      {super.key, required this.item, required this.onRemove, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final p = item.product;
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       color: AppColors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -94,6 +99,7 @@ class CartItemTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

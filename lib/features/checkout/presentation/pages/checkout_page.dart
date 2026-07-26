@@ -12,6 +12,7 @@ import '../../../address/presentation/widgets/add_address_sheet.dart';
 import '../../../address/presentation/widgets/select_address_sheet.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../../core/widgets/z_icon.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -70,12 +71,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     children: [
                       const _DeliveryAddressSection(),
                       _Section(
-                        title: '💳 Payment method',
+                        iconName: 'card',
+                        title: 'Payment method',
                         action: 'Add card',
                         child: Column(
                           children: [
                             _PayOption(
-                              icon: '💳',
+                              icon: const ZIcon('card', size: 18, color: AppColors.charcoal),
                               name: 'Visa ending ×××× 4821',
                               meta: 'Expires 09/27',
                               selected: _payIndex == 0,
@@ -83,7 +85,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ),
                             const Divider(height: 1, color: AppColors.border),
                             _PayOption(
-                              icon: '🍎',
+                              icon: const Text('🍎', style: TextStyle(fontSize: 20)),
                               name: 'Apple Pay',
                               meta: 'Touch ID to pay',
                               selected: _payIndex == 1,
@@ -91,7 +93,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ),
                             const Divider(height: 1, color: AppColors.border),
                             _PayOption(
-                              icon: '🛍️',
+                              icon: const ZIcon('bag', size: 16, color: AppColors.charcoal),
                               name: 'Tabby — Pay in 4',
                               meta:
                                   'AED ${formatAmount(state.tabbyInstalment)} × 4 · 0% interest',
@@ -102,7 +104,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ),
                       ),
                       _Section(
-                        title: '🛒 Items (${state.itemCount})',
+                        iconName: 'cart',
+                        title: 'Items (${state.itemCount})',
                         child: Column(
                           children: [
                             for (final item in state.items)
@@ -178,15 +181,30 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(9999)),
                               ),
-                              child: Text(
-                                  'Pay AED ${formatAmount(state.total)} →',
-                                  style: AppTextStyles.button),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Pay AED ${formatAmount(state.total)}',
+                                      style: AppTextStyles.button),
+                                  const SizedBox(width: 6),
+                                  const ZIcon('chev-r',
+                                      size: 16, color: AppColors.white),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text('🔒 Secured by Mamo Pay',
-                              style: AppTextStyles.caption
-                                  .copyWith(fontSize: 11, color: AppColors.light)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const ZIcon('lock',
+                                  size: 11, color: AppColors.light),
+                              const SizedBox(width: 4),
+                              Text('Secured by Mamo Pay',
+                                  style: AppTextStyles.caption.copyWith(
+                                      fontSize: 11, color: AppColors.light)),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -245,7 +263,8 @@ class _DeliveryAddressSectionState extends State<_DeliveryAddressSection> {
       builder: (context, state) {
         final address = state.selected;
         return _Section(
-          title: '📍 Delivery address',
+          iconName: 'pin',
+          title: 'Delivery address',
           action: address == null ? 'Add' : 'Change',
           onAction: () => address == null
               ? AddAddressSheet.show(context, cubit)
@@ -338,11 +357,13 @@ class _DeliveryAddressSectionState extends State<_DeliveryAddressSection> {
 
 class _Section extends StatelessWidget {
   final String title;
+  final String? iconName;
   final String? action;
   final VoidCallback? onAction;
   final Widget child;
   const _Section({
     required this.title,
+    this.iconName,
     this.action,
     this.onAction,
     required this.child,
@@ -368,11 +389,20 @@ class _Section extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title,
-                    style: AppTextStyles.body.copyWith(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.black)),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (iconName != null) ...[
+                      ZIcon(iconName!, size: 13, color: AppColors.primary),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(title,
+                        style: AppTextStyles.body.copyWith(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.black)),
+                  ],
+                ),
                 if (action != null)
                   GestureDetector(
                     onTap: onAction,
@@ -397,7 +427,7 @@ class _Section extends StatelessWidget {
 }
 
 class _PayOption extends StatelessWidget {
-  final String icon;
+  final Widget icon;
   final String name;
   final String meta;
   final bool selected;
@@ -429,12 +459,9 @@ class _PayOption extends StatelessWidget {
                     color: selected ? AppColors.primary : AppColors.border,
                     width: 2),
               ),
-              child: selected
-                  ? const Icon(Icons.check, size: 12, color: AppColors.white)
-                  : null,
             ),
             const SizedBox(width: 12),
-            Text(icon, style: const TextStyle(fontSize: 20)),
+            SizedBox(width: 24, child: Center(child: icon)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

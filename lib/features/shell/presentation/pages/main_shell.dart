@@ -11,6 +11,9 @@ class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
   const MainShell({super.key, required this.navigationShell});
 
+  /// Index of the Profile branch (Search=0, Cart=1, Orders=2, Profile=3).
+  static const int _profileBranchIndex = 3;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,7 +25,11 @@ class MainShell extends StatelessWidget {
           cartCount: cart.itemCount,
           onTap: (index) => navigationShell.goBranch(
             index,
-            initialLocation: index == navigationShell.currentIndex,
+            // Re-tapping the active tab resets its stack. The Profile tab is
+            // additionally always opened at its root (/profile) so it never
+            // lands on a nested page like Favourites.
+            initialLocation: index == navigationShell.currentIndex ||
+                index == _profileBranchIndex,
           ),
         ),
       ),

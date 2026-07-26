@@ -2,12 +2,25 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../../product/domain/entities/product.dart';
 import '../../domain/repositories/wishlist_repository.dart';
 import '../datasources/wishlist_remote_data_source.dart';
 
 class WishlistRepositoryImpl implements WishlistRepository {
   final WishlistRemoteDataSource remoteDataSource;
   WishlistRepositoryImpl({required this.remoteDataSource});
+
+  @override
+  Future<Either<Failure, List<Product>>> getWishlist() async {
+    try {
+      final items = await remoteDataSource.getWishlist();
+      return Right(List<Product>.from(items));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(ServerFailure());
+    }
+  }
 
   @override
   Future<Either<Failure, Unit>> add(String productId) =>

@@ -33,7 +33,6 @@ class HomePage extends StatelessWidget {
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
-  /// Opens the Category Browse screen for [category].
   void _openCategory(BuildContext context, ShopCategory category) =>
       context.push(AppRoute.category.path, extra: category);
 
@@ -46,14 +45,12 @@ class _HomeView extends StatelessWidget {
         extra: ProductListArgs(title: title, products: products),
       );
 
-  /// First name from a full name, e.g. "Ahmed Hassan" -> "Ahmed".
   String? _firstName(String? fullName) {
     final n = fullName?.trim() ?? '';
     if (n.isEmpty) return null;
     return n.split(RegExp(r'\s+')).first;
   }
 
-  /// Up to two initials from a full name, e.g. "Ahmed Hassan" -> "AH".
   String? _initials(String? fullName) {
     final n = fullName?.trim() ?? '';
     if (n.isEmpty) return null;
@@ -66,7 +63,6 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Personalise the greeting once the user is authenticated after login.
     final fullName = context.watch<AuthBloc>().state.user?.fullName;
     final firstName = _firstName(fullName);
     final greeting =
@@ -74,62 +70,64 @@ class _HomeView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          HomeHeader(
-            greeting: greeting,
-            avatarInitials: _initials(fullName),
-            onSearchTap: () => context.push(AppRoute.search.path),
-          ),
-          Expanded(
-            child: BlocBuilder<HomeCubit, HomeState>(
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HomeHeader(
+              greeting: greeting,
+              avatarInitials: _initials(fullName),
+              onSearchTap: () => context.push(AppRoute.search.path),
+            ),
+            BlocBuilder<HomeCubit, HomeState>(
               builder: (context, state) {
                 if (state.status == HomeStatus.loading ||
                     state.status == HomeStatus.initial) {
                   return const HomeContentSkeleton();
                 }
                 if (state.status == HomeStatus.failure) {
-                  return Center(child: Text(state.errorMessage ?? 'Error'));
+                  return Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Center(child: Text(state.errorMessage ?? 'Error')),
+                  );
                 }
-                return SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CategoryPills(
-                        categories: state.categories,
-                        selectedIndex: state.selectedCategoryIndex,
-                        onSelected: (i) {
-                          context.read<HomeCubit>().selectCategory(i);
-                          _openCategory(context, state.categories[i]);
-                        },
-                      ),
-                      const PromoBanner(),
-                      SectionHeader(
-                        title: 'Recently listed',
-                        onAction: () => _openList(
-                            context, 'Recently listed', state.recentlyListed),
-                      ),
-                      WishlistProductGrid(
-                        products: state.recentlyListed.take(4).toList(),
-                        onTap: (p) => _openProduct(context, p),
-                      ),
-                      SectionHeader(
-                        title: 'Top picks',
-                        onAction: () =>
-                            _openList(context, 'Top picks', state.topPicks),
-                      ),
-                      WishlistProductGrid(
-                        products: state.topPicks.take(4).toList(),
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                        onTap: (p) => _openProduct(context, p),
-                      ),
-                    ],
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CategoryPills(
+                      categories: state.categories,
+                      selectedIndex: state.selectedCategoryIndex,
+                      onSelected: (i) {
+                        context.read<HomeCubit>().selectCategory(i);
+                        _openCategory(context, state.categories[i]);
+                      },
+                    ),
+                    const PromoBanner(),
+                    SectionHeader(
+                      title: 'Recently listed',
+                      onAction: () => _openList(
+                          context, 'Recently listed', state.recentlyListed),
+                    ),
+                    WishlistProductGrid(
+                      products: state.recentlyListed.take(4).toList(),
+                      onTap: (p) => _openProduct(context, p),
+                    ),
+                    SectionHeader(
+                      title: 'Top picks',
+                      onAction: () =>
+                          _openList(context, 'Top picks', state.topPicks),
+                    ),
+                    WishlistProductGrid(
+                      products: state.topPicks.take(4).toList(),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      onTap: (p) => _openProduct(context, p),
+                    ),
+                  ],
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

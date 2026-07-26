@@ -39,8 +39,9 @@ class ProfilePage extends StatelessWidget {
     final hasName = (user?.fullName?.trim().isNotEmpty ?? false);
     final name = hasName ? user!.fullName!.trim() : 'Zook User';
     final phone = user?.phoneNumber ?? '';
-    // Placeholder stats to match the mockup; wire to real data later.
-    const savedCount = 12;
+    final savedCount = context.watch<WishlistCubit>().state.ids.length;
+    WidgetsBinding.instance.addPostFrameCallback(
+        (_) => context.read<WishlistCubit>().loadServer());
     final orderCount = kMockOrders.length;
     final activeCount = kMockOrders.where((o) => o.status.isActive).length;
 

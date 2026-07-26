@@ -6,6 +6,7 @@ import '../../../../app/app_router.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/skeleton.dart';
+import '../../../../core/widgets/z_icon.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
@@ -100,13 +101,22 @@ class ProductDetailPage extends StatelessWidget {
                                       color: AppColors.successPale,
                                       borderRadius: BorderRadius.circular(9999),
                                     ),
-                                    child: const Text(
-                                      '✅ Zook Verified',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF15803D),
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        ZIcon('check',
+                                            size: 11,
+                                            color: Color(0xFF15803D)),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Zook Verified',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF15803D),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -151,12 +161,14 @@ class ProductDetailPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 14),
                               _DetailReport(detail: d, loading: loading),
-                              // Tabby installment section hidden for now.
-                              // const SizedBox(height: 14),
-                              // _TabbyRow(
-                              //     instalment: ((d?.priceAed ?? product.priceAed) /
-                              //             4)
-                              //         .round()),
+                              const SizedBox(height: 14),
+                              _SellerRow(detail: d),
+                              const SizedBox(height: 14),
+                              _TabbyRow(
+                                instalment:
+                                    ((d?.priceAed ?? product.priceAed) / 4)
+                                        .round(),
+                              ),
                             ],
                           ),
                         ),
@@ -277,21 +289,32 @@ class _HeroState extends State<_Hero> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _RoundBtn(icon: '←', onTap: () => context.pop()),
+                      _RoundBtn(
+                        child: const ZIcon('arrow-left', size: 18, color: AppColors.charcoal),
+                        onTap: () => context.pop(),
+                      ),
                       Row(
                         children: [
-                          _RoundBtn(icon: '🔗', onTap: () {}),
+                          _RoundBtn(
+                            child: const ZIcon('link', size: 15, color: AppColors.charcoal),
+                            onTap: () {},
+                          ),
                           const SizedBox(width: 8),
                           _RoundBtn(
-                            icon:
-                                context.watch<WishlistCubit>().isWishlisted(
-                                  widget.product.id,
-                                )
-                                ? '❤️'
-                                : '🤍',
-                            onTap: () => context.read<WishlistCubit>().toggle(
-                              widget.product,
+                            child: ZIcon(
+                              context.watch<WishlistCubit>().isWishlisted(
+                                          widget.product.id)
+                                  ? 'heart-fill'
+                                  : 'heart',
+                              size: 15,
+                              color: context.watch<WishlistCubit>().isWishlisted(
+                                          widget.product.id)
+                                  ? AppColors.primary
+                                  : AppColors.charcoal,
                             ),
+                            onTap: () => context
+                                .read<WishlistCubit>()
+                                .toggle(widget.product),
                           ),
                         ],
                       ),
@@ -312,13 +335,22 @@ class _HeroState extends State<_Hero> {
                       color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(9999),
                     ),
-                    child: Text(
-                      '📸 Official ${widget.brand} photo',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ZIcon('camera',
+                            size: 11,
+                            color: Colors.white.withValues(alpha: 0.7)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Official ${widget.brand} photo',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -332,9 +364,9 @@ class _HeroState extends State<_Hero> {
 }
 
 class _RoundBtn extends StatelessWidget {
-  final String icon;
+  final Widget child;
   final VoidCallback onTap;
-  const _RoundBtn({required this.icon, required this.onTap});
+  const _RoundBtn({required this.child, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +387,7 @@ class _RoundBtn extends StatelessWidget {
           ],
         ),
         alignment: Alignment.center,
-        child: Text(icon, style: const TextStyle(fontSize: 17)),
+        child: child,
       ),
     );
   }
@@ -485,12 +517,19 @@ class _DetailReportState extends State<_DetailReport> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '📸 Condition photos & report',
-                    style: AppTextStyles.body.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const ZIcon('camera', size: 13, color: AppColors.charcoal),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Condition photos & report',
+                        style: AppTextStyles.body.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                   AnimatedRotation(
                     turns: _open ? 0.5 : 0,
@@ -614,6 +653,77 @@ class _InspectionThumb extends StatelessWidget {
   }
 }
 
+class _SellerRow extends StatelessWidget {
+  final ProductDetail? detail;
+  const _SellerRow({required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasVendor = detail?.vendorName.trim().isNotEmpty ?? false;
+    final name = hasVendor ? detail!.vendorName : 'Sold & fulfilled by Zook';
+    final initials = detail?.vendorInitials ?? 'ZK';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.black,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Row(
+                  children: [
+                    const ZIcon('star', size: 12, color: AppColors.warning),
+                    const SizedBox(width: 4),
+                    Text(
+                      '4.8 · 32 reviews on this product',
+                      style: AppTextStyles.caption
+                          .copyWith(fontSize: 11, color: AppColors.light),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const ZIcon('chev-r', size: 16, color: AppColors.light),
+        ],
+      ),
+    );
+  }
+}
+
 class _TabbyRow extends StatelessWidget {
   final int instalment;
   const _TabbyRow({required this.instalment});
@@ -621,39 +731,50 @@ class _TabbyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.white,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          Text(
-            'tabby',
-            style: AppTextStyles.body.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.charcoal,
-            ),
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: Text.rich(
               TextSpan(
-                style: AppTextStyles.caption.copyWith(
-                  fontSize: 12,
-                  color: AppColors.mid,
+                style: AppTextStyles.body.copyWith(
+                  fontSize: 13,
+                  color: AppColors.charcoal,
+                  height: 1.5,
                 ),
                 children: [
-                  const TextSpan(text: 'Pay '),
+                  const TextSpan(text: 'As low as '),
                   TextSpan(
-                    text: 'AED ${formatAmount(instalment)}',
+                    text: 'AED ${formatAmount(instalment)}/month',
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.charcoal,
+                      color: AppColors.black,
                     ),
                   ),
-                  const TextSpan(text: ' × 4 monthly · 0% interest'),
+                  const TextSpan(text: '\nor 4 interest-free payments.'),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3EEDBF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text(
+              'tabby',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F1F1A),
+                letterSpacing: -0.2,
               ),
             ),
           ),
@@ -675,6 +796,7 @@ class _StickyCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inCart = context.watch<CartCubit>().contains(product.id);
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
@@ -697,34 +819,59 @@ class _StickyCta extends StatelessWidget {
                     border: Border.all(color: AppColors.border, width: 1.5),
                   ),
                   alignment: Alignment.center,
-                  child: Text(
+                  child: ZIcon(
                     context.watch<WishlistCubit>().isWishlisted(product.id)
-                        ? '❤️'
-                        : '🤍',
-                    style: const TextStyle(fontSize: 20),
+                        ? 'heart-fill'
+                        : 'heart',
+                    size: 20,
+                    color:
+                        context.watch<WishlistCubit>().isWishlisted(product.id)
+                            ? AppColors.primary
+                            : AppColors.charcoal,
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: OutlinedButton(
-                  onPressed: onAddToCart,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surface,
-                    side: const BorderSide(color: AppColors.border, width: 1.5),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                  ),
-                  child: Text(
-                    'Add to cart',
-                    style: AppTextStyles.button.copyWith(
-                      color: AppColors.black,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
+                child: inCart
+                    ? OutlinedButton(
+                        onPressed: () => context.go(AppRoute.cart.path),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: AppColors.primaryPale,
+                          side: const BorderSide(
+                              color: AppColors.primary, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const ZIcon('cart',
+                                size: 15, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text('Go to cart',
+                                style: AppTextStyles.button.copyWith(
+                                    color: AppColors.primary, fontSize: 14)),
+                          ],
+                        ),
+                      )
+                    : OutlinedButton(
+                        onPressed: onAddToCart,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: AppColors.surface,
+                          side: const BorderSide(
+                              color: AppColors.border, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                        ),
+                        child: Text('Add to cart',
+                            style: AppTextStyles.button.copyWith(
+                                color: AppColors.black, fontSize: 14)),
+                      ),
               ),
               const SizedBox(width: 10),
               Expanded(

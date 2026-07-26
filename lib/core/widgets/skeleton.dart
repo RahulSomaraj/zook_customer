@@ -209,11 +209,9 @@ class HomeContentSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer(
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             // Category pills
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -247,10 +245,9 @@ class HomeContentSkeleton extends StatelessWidget {
                 ],
               ),
             ),
-            const _ProductGridBody(count: 4),
-            const SizedBox(height: 12),
-          ],
-        ),
+          const _ProductGridBody(count: 4),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }

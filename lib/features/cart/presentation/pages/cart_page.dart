@@ -9,6 +9,7 @@ import '../../../../core/utils/formatters.dart';
 import '../cubit/cart_cubit.dart';
 import '../widgets/cart_item_tile.dart';
 import '../widgets/order_summary.dart';
+import '../../../../core/widgets/z_icon.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -74,6 +75,9 @@ class _CartPageState extends State<CartPage> {
                             for (final item in state.items) ...[
                               CartItemTile(
                                 item: item,
+                                onTap: () => context.push(
+                                    AppRoute.product.path,
+                                    extra: item.product),
                                 onRemove: () => context
                                     .read<CartCubit>()
                                     .remove(item.product.id),
@@ -116,8 +120,16 @@ class _CartPageState extends State<CartPage> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(9999)),
                             ),
-                            child: Text('Proceed to Checkout →',
-                                style: AppTextStyles.button),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('Proceed to Checkout',
+                                    style: AppTextStyles.button),
+                                const SizedBox(width: 6),
+                                const ZIcon('chev-r',
+                                    size: 16, color: AppColors.white),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -140,33 +152,41 @@ class _TabbyNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          Text('tabby',
-              style: AppTextStyles.body.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.charcoal)),
-          const SizedBox(width: 10),
           Expanded(
             child: Text.rich(TextSpan(
-              style: AppTextStyles.caption
-                  .copyWith(fontSize: 12, color: AppColors.mid),
+              style: AppTextStyles.body.copyWith(
+                  fontSize: 13, color: AppColors.charcoal, height: 1.5),
               children: [
-                const TextSpan(text: 'Or pay '),
+                const TextSpan(text: 'As low as '),
                 TextSpan(
-                    text: 'AED ${formatAmount(instalment)}',
+                    text: 'AED ${formatAmount(instalment)}/month',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, color: AppColors.charcoal)),
-                const TextSpan(text: ' × 4 monthly with Tabby'),
+                        fontWeight: FontWeight.w800, color: AppColors.black)),
+                const TextSpan(text: '\nor 4 interest-free payments.'),
               ],
             )),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3EEDBF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text('tabby',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F1F1A),
+                    letterSpacing: -0.2)),
           ),
         ],
       ),

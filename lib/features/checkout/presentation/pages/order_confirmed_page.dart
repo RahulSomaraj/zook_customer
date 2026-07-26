@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../../core/widgets/z_icon.dart';
 
 /// Order confirmation. Snapshots the cart, then clears it.
 class OrderConfirmedPage extends StatefulWidget {
@@ -127,7 +128,7 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
                 ),
                 child: Row(
                   children: [
-                    const Text('🚚', style: TextStyle(fontSize: 24)),
+                    const ZIcon('truck', size: 26, color: AppColors.primary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -164,8 +165,17 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(9999)),
                         ),
-                        child: Text('📦 Track my order',
-                            style: AppTextStyles.button.copyWith(fontSize: 14)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const ZIcon('box',
+                                size: 14, color: AppColors.white),
+                            const SizedBox(width: 6),
+                            Text('Track my order',
+                                style: AppTextStyles.button
+                                    .copyWith(fontSize: 14)),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),

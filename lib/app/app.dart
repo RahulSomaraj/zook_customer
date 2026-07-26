@@ -23,11 +23,29 @@ class ZookApp extends StatelessWidget {
         BlocProvider<CartCubit>.value(value: sl<CartCubit>()),
         BlocProvider<WishlistCubit>.value(value: sl<WishlistCubit>()),
       ],
-      child: MaterialApp.router(
-        title: AppStrings.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        routerConfig: AppRouter.router,
+      child: BlocListener<AuthBloc, AuthState>(
+        // Keep cart & wishlist in sync with the session: prime their counts the
+        // moment we become authenticated (login OR cold start with a saved
+        // session), and fully reset them on logout so the next login reloads
+        // fresh instead of showing stale/empty counts until a manual refresh.
+        listenWhen: (prev, curr) => prev.status != curr.status,
+        listener: (context, state) {
+          final cart = context.read<CartCubit>();
+          final wishlist = context.read<WishlistCubit>();
+          if (state.status == AuthStatus.authenticated) {
+            cart.load();
+            wishlist.loadServer();
+          } else if (state.status == AuthStatus.initial) {
+            cart.reset();
+            wishlist.reset();
+          }
+        },
+        child: MaterialApp.router(
+          title: AppStrings.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          routerConfig: AppRouter.router,
+        ),
       ),
     );
   }

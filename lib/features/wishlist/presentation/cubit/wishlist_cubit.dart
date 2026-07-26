@@ -17,13 +17,39 @@ class WishlistCubit extends Cubit<WishlistState> {
 
   bool isWishlisted(String productId) => state.ids.contains(productId);
 
-  /// Clears all local wishlist state (e.g. on logout).
-  void reset() => emit(const WishlistState());
+  bool _serverLoaded = false;
+
+  /// Fetches the real wishlist from the server once and replaces membership,
+  /// so counts (e.g. the profile "Saved" stat) are accurate.
+  Future<void> loadServer() async {
+    if (_serverLoaded) return;
+    _serverLoaded = true;
+    final res = await repository.getWishlist();
+    res.fold(
+      (_) {},
+      (items) => emit(state.copyWith(ids: items.map((p) => p.id).toSet())),
+    );
+  }
+
+  /// Clears all local wishlist state and re-arms the one-shot server fetch,
+  /// so the next login reloads the correct wishlist (e.g. on logout).
+  void reset() {
+    _serverLoaded = false;
+    emit(const WishlistState());
+  }
 
   /// Seeds membership from product flags coming off the catalog API
   /// (`is_wishlisted`). Never removes ids already known locally.
   void seedFrom(Iterable<Product> products) {
     final add = products.where((p) => p.isWishlisted).map((p) => p.id).toSet();
+    if (add.isEmpty || add.every(state.ids.contains)) return;
+    emit(state.copyWith(ids: {...state.ids, ...add}));
+  }
+
+  /// Seeds membership from a set of ids known to be wishlisted (e.g. the
+  /// Favourites page fetched from the API), so hearts show as filled.
+  void seedIds(Iterable<String> ids) {
+    final add = ids.toSet();
     if (add.isEmpty || add.every(state.ids.contains)) return;
     emit(state.copyWith(ids: {...state.ids, ...add}));
   }
