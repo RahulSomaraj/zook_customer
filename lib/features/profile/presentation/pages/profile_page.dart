@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_router.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../address/presentation/cubit/address_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../orders/data/orders_mock.dart';
 import '../../../orders/domain/entities/customer_order.dart';
@@ -45,7 +47,9 @@ class ProfilePage extends StatelessWidget {
     final orderCount = kMockOrders.length;
     final activeCount = kMockOrders.where((o) => o.status.isActive).length;
 
-    return Scaffold(
+    return BlocProvider<AddressCubit>(
+      create: (_) => sl<AddressCubit>()..load(),
+      child: Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
         children: [
@@ -97,13 +101,24 @@ class ProfilePage extends StatelessWidget {
                   sub: '$savedCount items saved',
                   onTap: () => context.push(AppRoute.favourites.path),
                 ),
-                _MenuItem(
-                  icon: Icons.location_on_outlined,
-                  iconColor: const Color(0xFF15803D),
-                  iconBg: AppColors.successPale,
-                  label: 'Delivery Addresses',
-                  sub: '2 saved addresses',
-                  onTap: () => _soon(context),
+                Builder(
+                  builder: (context) {
+                    final count = context
+                        .watch<AddressCubit>()
+                        .state
+                        .addresses
+                        .length;
+                    return _MenuItem(
+                      icon: Icons.location_on_outlined,
+                      iconColor: const Color(0xFF15803D),
+                      iconBg: AppColors.successPale,
+                      label: 'Delivery Addresses',
+                      sub: count == 0
+                          ? 'Add a delivery address'
+                          : '$count saved address${count == 1 ? '' : 'es'}',
+                      onTap: () => context.push(AppRoute.addresses.path),
+                    );
+                  },
                 ),
                 const _SectionLabel('Selling'),
                 _MenuItem(
@@ -198,6 +213,7 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

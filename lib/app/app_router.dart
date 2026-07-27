@@ -20,6 +20,7 @@ import '../features/product/domain/entities/category.dart';
 import '../features/product/domain/entities/product.dart';
 import '../features/product/presentation/pages/product_detail_page.dart';
 import '../features/product/presentation/pages/product_list_page.dart';
+import '../features/address/presentation/pages/addresses_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/search/presentation/pages/search_page.dart';
 import '../features/shell/presentation/pages/main_shell.dart';
@@ -43,6 +44,7 @@ enum AppRoute {
   orders('/orders'),
   profile('/profile'),
   favourites('/profile/favourites'),
+  addresses('/profile/addresses'),
   product('/product'),
   orderTrack('/order-track'),
   checkout('/checkout'),
@@ -194,6 +196,11 @@ class AppRouter {
                     path: 'favourites',
                     name: AppRoute.favourites.name,
                     builder: (context, state) => const FavouritesPage(),
+                  ),
+                  GoRoute(
+                    path: 'addresses',
+                    name: AppRoute.addresses.name,
+                    builder: (context, state) => const AddressesPage(),
                   ),
                 ],
               ),
