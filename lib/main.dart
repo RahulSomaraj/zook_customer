@@ -1,11 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
+import 'core/constants/auth_config.dart';
 import 'core/di/injection.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Supabase brokers Google sign-in (native ID-token flow). Skipped when not
+  // configured — phone-OTP login works without it.
+  if (AuthConfig.supabaseConfigured) {
+    await Supabase.initialize(
+      url: AuthConfig.supabaseUrl,
+      anonKey: AuthConfig.supabaseAnonKey,
+    );
+  }
 
   // Some product images (user uploads on Supabase) return corrupt/undecodable
   // bytes. Every Image.network already falls back to a placeholder via its

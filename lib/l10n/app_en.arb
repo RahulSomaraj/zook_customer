@@ -1,0 +1,79 @@
+{
+  "@@locale": "en",
+
+  "appName": "Zook",
+  "tagline": "UAE's trusted secondhand marketplace",
+
+  "localeTitle": "Where are you shopping from?",
+  "localeSubtitle": "Your country sets your currency and phone number format.",
+  "countryLabel": "Country",
+  "languageLabel": "Language",
+  "localeContinue": "Continue",
+  "localeNote": "You can change country and language anytime in Profile.",
+
+  "skip": "Skip",
+  "next": "Next",
+  "getStarted": "Get Started",
+
+  "welcomeBack": "Welcome back",
+  "signInToAccount": "Sign in to your account",
+  "mobileNumber": "Mobile number",
+  "continueWithOtp": "Continue with OTP",
+  "invalidPhone": "Invalid mobile number",
+  "orContinueWith": "or continue with",
+  "continueWithApple": "Continue with Apple",
+  "continueWithGoogle": "Continue with Google",
+  "noAccount": "Don't have an account?",
+  "signUpFree": "Sign up free",
+
+  "createAccount": "Create account",
+  "signUpSubtitle": "Join Zook in a few seconds",
+  "fullName": "Full name",
+  "fullNameHint": "Enter your full name",
+  "email": "Email",
+  "emailHint": "Enter your email",
+  "mobileHint": "Enter your mobile number",
+  "continueText": "Continue",
+  "invalidName": "Invalid name",
+  "invalidEmail": "Invalid email address",
+  "haveAccount": "Already have an account?",
+  "signIn": "Sign in",
+
+  "enterOtp": "Enter OTP",
+  "otpSentTo": "We sent a 6-digit code to",
+  "resendIn": "Resend in",
+  "resendOtp": "Resend OTP",
+  "verifyContinue": "Verify & Continue",
+  "termsPrefix": "By continuing you agree to Zook's",
+  "terms": "Terms of Service",
+  "and": "and",
+  "privacy": "Privacy Policy",
+
+  "tabSearch": "Search",
+  "tabCart": "Cart",
+  "tabOrders": "Orders",
+  "tabProfile": "Profile",
+
+  "verifyPhoneTitle": "Verify phone",
+  "addPhoneTitle": "Add your mobile number",
+  "enterCodeTitle": "Enter the 6-digit code",
+  "phoneNeededForDelivery": "We need a verified phone number to deliver your order.",
+  "sendCode": "Send code",
+  "resendCode": "Resend code",
+  "verifyAndContinue": "Verify & continue",
+  "sentTo": "Sent to {phone}",
+  "@sentTo": {
+    "placeholders": {
+      "phone": { "type": "String" }
+    }
+  },
+  "uatDevCode": "UAT dev code",
+
+  "verificationFailed": "Verification failed",
+  "signInFailed": "Sign-in failed",
+  "registrationFailed": "Registration failed",
+  "pleaseTryAgain": "Please try again.",
+
+  "logOut": "Log out",
+  "comingSoon": "Coming soon"
+}

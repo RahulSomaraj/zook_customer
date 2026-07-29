@@ -7,7 +7,10 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get light {
+  static ThemeData get light => build(arabic: false);
+
+  /// Theme with a locale-appropriate default font (Manrope / Cairo).
+  static ThemeData build({required bool arabic}) {
     final base = ThemeData.light(useMaterial3: true);
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.white,
@@ -18,7 +21,9 @@ class AppTheme {
         surface: AppColors.white,
         error: Colors.red,
       ),
-      textTheme: GoogleFonts.manropeTextTheme(base.textTheme),
+      textTheme: arabic
+          ? GoogleFonts.cairoTextTheme(base.textTheme)
+          : GoogleFonts.manropeTextTheme(base.textTheme),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.white,
         elevation: 0,

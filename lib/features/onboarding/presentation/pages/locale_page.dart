@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_router.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/locale/locale_cubit.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -48,9 +50,19 @@ class LocalePage extends StatefulWidget {
 
 class _LocalePageState extends State<LocalePage> {
   int _country = 0;
-  int _language = 0;
+  late int _language =
+      context.read<LocaleCubit>().isArabic ? 1 : 0; // index into _kLanguages
 
-  void _continue() => context.go(AppRoute.onboarding.path);
+  void _continue() {
+    // Apply + persist the chosen language app-wide (index 1 = العربية).
+    context.read<LocaleCubit>().setLanguage(_language == 1 ? 'ar' : 'en');
+    // Reached from onboarding normally; from Profile it can just pop back.
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoute.onboarding.path);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

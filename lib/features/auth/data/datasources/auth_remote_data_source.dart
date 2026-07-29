@@ -22,6 +22,21 @@ abstract class AuthRemoteDataSource {
     required String phone,
     required String code,
   });
+
+  /// Exchanges a Supabase access token (from native Google sign-in via the
+  /// Supabase SDK) for our own session tokens.
+  Future<AuthUserModel> socialGoogle(String supabaseAccessToken);
+
+  /// Sends an OTP to attach [phone] to the CURRENT authenticated user.
+  /// Returns the dev code when provided (UAT), otherwise null.
+  Future<String?> sendPhoneAttachOtp(String phone);
+
+  /// Verifies the attach OTP; on success the API sets phone + phoneVerified
+  /// on the current user.
+  Future<void> verifyPhoneAttach({
+    required String phone,
+    required String code,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -72,6 +87,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     return AuthUserModel.fromVerifyData(data, phone: phone);
   }
 
+  @override
+  Future<AuthUserModel> socialGoogle(String supabaseAccessToken) async {
+    final data = await _post(
+      ApiConstants.socialGoogle,
+      {'supabaseAccessToken': supabaseAccessToken},
+    );
+    // Same `{ tokens: { ..., user } }` shape as verifyOtp. Social users may
+    // have no phone yet — checkout will prompt for one.
+    return AuthUserModel.fromVerifyData(data, phone: '');
+  }
+
+  @override
+  Future<String?> sendPhoneAttachOtp(String phone) async {
+    final data = await _post(ApiConstants.phoneAttachSend, {'phone': phone});
+    return data['devCode'] as String?;
+  }
+
+  @override
+  Future<void> verifyPhoneAttach({
+    required String phone,
+    required String code,
+  }) async {
+    await _post(ApiConstants.phoneAttachVerify, {'phone': phone, 'code': code});
+  }
+
   /// POSTs [body] and returns the unwrapped `data` object, throwing a
   /// [ServerException] on transport errors or `success: false` responses.
   Future<Map<String, dynamic>> _post(
@@ -82,14 +122,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (map['success'] == true && map['data'] != null) {
         return (map['data'] as Map).cast<String, dynamic>();
       }
-      throw ServerException(_messageFrom(map));
+      throw ServerException(_messageFrom(map), _retryAfterFrom(map));
     } on DioException catch (e) {
       final resData = e.response?.data;
       if (resData is Map) {
-        throw ServerException(_messageFrom(resData.cast<String, dynamic>()));
+        final map = resData.cast<String, dynamic>();
+        throw ServerException(_messageFrom(map), _retryAfterFrom(map));
       }
       throw ServerException(e.message ?? 'Network error. Please try again.');
     }
+  }
+
+  /// Reads the API's 429 `retryAfterSeconds` hint when present.
+  int? _retryAfterFrom(Map<String, dynamic> map) {
+    final v = map['retryAfterSeconds'];
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return null;
   }
 
   String _messageFrom(Map<String, dynamic> map) {

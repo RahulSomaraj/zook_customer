@@ -1,0 +1,79 @@
+{
+  "@@locale": "ar",
+
+  "appName": "Zook",
+  "tagline": "سوق الإمارات الموثوق للسلع المستعملة",
+
+  "localeTitle": "من أين تتسوق؟",
+  "localeSubtitle": "بلدك يحدد العملة وصيغة رقم الهاتف.",
+  "countryLabel": "الدولة",
+  "languageLabel": "اللغة",
+  "localeContinue": "متابعة",
+  "localeNote": "يمكنك تغيير الدولة واللغة في أي وقت من الملف الشخصي.",
+
+  "skip": "تخطي",
+  "next": "التالي",
+  "getStarted": "ابدأ الآن",
+
+  "welcomeBack": "مرحبًا بعودتك",
+  "signInToAccount": "سجّل الدخول إلى حسابك",
+  "mobileNumber": "رقم الهاتف المتحرك",
+  "continueWithOtp": "المتابعة برمز التحقق",
+  "invalidPhone": "رقم هاتف غير صالح",
+  "orContinueWith": "أو تابع باستخدام",
+  "continueWithApple": "المتابعة عبر Apple",
+  "continueWithGoogle": "المتابعة عبر Google",
+  "noAccount": "ليس لديك حساب؟",
+  "signUpFree": "سجّل مجانًا",
+
+  "createAccount": "إنشاء حساب",
+  "signUpSubtitle": "انضم إلى Zook في ثوانٍ",
+  "fullName": "الاسم الكامل",
+  "fullNameHint": "أدخل اسمك الكامل",
+  "email": "البريد الإلكتروني",
+  "emailHint": "أدخل بريدك الإلكتروني",
+  "mobileHint": "أدخل رقم هاتفك المتحرك",
+  "continueText": "متابعة",
+  "invalidName": "اسم غير صالح",
+  "invalidEmail": "بريد إلكتروني غير صالح",
+  "haveAccount": "لديك حساب بالفعل؟",
+  "signIn": "تسجيل الدخول",
+
+  "enterOtp": "أدخل رمز التحقق",
+  "otpSentTo": "أرسلنا رمزًا من 6 أرقام إلى",
+  "resendIn": "إعادة الإرسال خلال",
+  "resendOtp": "إعادة إرسال الرمز",
+  "verifyContinue": "تحقق وتابع",
+  "termsPrefix": "بمتابعتك فإنك توافق على",
+  "terms": "شروط الخدمة",
+  "and": "و",
+  "privacy": "سياسة الخصوصية",
+
+  "tabSearch": "بحث",
+  "tabCart": "السلة",
+  "tabOrders": "الطلبات",
+  "tabProfile": "الملف الشخصي",
+
+  "verifyPhoneTitle": "تأكيد الهاتف",
+  "addPhoneTitle": "أضف رقم هاتفك المتحرك",
+  "enterCodeTitle": "أدخل الرمز المكوّن من 6 أرقام",
+  "phoneNeededForDelivery": "نحتاج إلى رقم هاتف مؤكد لتوصيل طلبك.",
+  "sendCode": "إرسال الرمز",
+  "resendCode": "إعادة إرسال الرمز",
+  "verifyAndContinue": "تحقق وتابع",
+  "sentTo": "أُرسل إلى {phone}",
+  "@sentTo": {
+    "placeholders": {
+      "phone": { "type": "String" }
+    }
+  },
+  "uatDevCode": "رمز بيئة الاختبار",
+
+  "verificationFailed": "فشل التحقق",
+  "signInFailed": "فشل تسجيل الدخول",
+  "registrationFailed": "فشل إنشاء الحساب",
+  "pleaseTryAgain": "يرجى المحاولة مرة أخرى.",
+
+  "logOut": "تسجيل الخروج",
+  "comingSoon": "قريبًا"
+}

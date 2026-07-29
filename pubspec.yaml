@@ -10,6 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Version pinned by flutter_localizations.
+  intl: any
 
   cupertino_icons: ^1.0.8
 
@@ -39,6 +43,14 @@ dependencies:
   # Functional error handling
   dartz: ^0.10.1
 
+  # Auto OTP detection — Android SMS User Consent API (works with any OTP
+  # SMS, no app-hash needed, so it's Twilio Verify compatible).
+  smart_auth: ^3.1.1
+
+  # Google sign-in via Supabase (native ID-token flow, no browser redirect).
+  supabase_flutter: ^2.8.0
+  google_sign_in: ^6.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -50,6 +62,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Runs gen-l10n on build: lib/l10n/*.arb → lib/l10n/gen/app_localizations*.
+  generate: true
 
   assets:
     - assets/images/

@@ -29,6 +29,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RegisterRequested>(_onRegisterRequested);
     on<OtpRequested>(_onOtpRequested);
     on<OtpSubmitted>(_onOtpSubmitted);
+    on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<PhoneAttachOtpRequested>(_onPhoneAttachOtpRequested);
+    on<PhoneAttachSubmitted>(_onPhoneAttachSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
   }
 
@@ -92,9 +95,65 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await sendOtp(SendOtpParams(phoneNumber: event.phoneNumber));
     result.fold(
       (failure) => emit(state.copyWith(
-          status: AuthStatus.failure, errorMessage: failure.message)),
+          status: AuthStatus.failure,
+          errorMessage: failure.message,
+          retryAfterSeconds: failure.retryAfterSeconds)),
       (devCode) =>
           emit(state.copyWith(status: AuthStatus.otpSent, devOtp: devCode)),
+    );
+  }
+
+  Future<void> _onGoogleSignInRequested(
+    GoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    final result = await authRepository.signInWithGoogle();
+    result.fold(
+      (failure) {
+        // A cancelled picker just returns to the idle screen, no error alert.
+        if (failure.message == 'Sign-in cancelled.') {
+          emit(state.copyWith(status: AuthStatus.initial));
+        } else {
+          emit(state.copyWith(
+              status: AuthStatus.failure, errorMessage: failure.message));
+        }
+      },
+      (user) =>
+          emit(state.copyWith(status: AuthStatus.authenticated, user: user)),
+    );
+  }
+
+  Future<void> _onPhoneAttachOtpRequested(
+    PhoneAttachOtpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(
+        status: AuthStatus.loading, phoneNumber: event.phoneNumber));
+    final result = await authRepository.sendPhoneAttachOtp(event.phoneNumber);
+    result.fold(
+      (failure) => emit(state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: failure.message,
+          retryAfterSeconds: failure.retryAfterSeconds)),
+      (devCode) => emit(state.copyWith(
+          status: AuthStatus.phoneAttachOtpSent, devOtp: devCode)),
+    );
+  }
+
+  Future<void> _onPhoneAttachSubmitted(
+    PhoneAttachSubmitted event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+    final result = await authRepository.verifyPhoneAttach(
+      phoneNumber: event.phoneNumber,
+      otp: event.otp,
+    );
+    result.fold(
+      (failure) => emit(state.copyWith(
+          status: AuthStatus.failure, errorMessage: failure.message)),
+      (_) => emit(state.copyWith(status: AuthStatus.phoneAttached)),
     );
   }
 

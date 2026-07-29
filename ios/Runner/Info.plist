@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Google sign-in: replace REVERSED_IOS_CLIENT_ID with the reversed form
+	     of your iOS OAuth client ID, e.g. com.googleusercontent.apps.1234-abc.
+	     Found in Google Cloud Console → the iOS client's "iOS URL scheme". -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>REVERSED_IOS_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

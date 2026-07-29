@@ -2,7 +2,12 @@
 /// convert them into [Failure]s.
 class ServerException implements Exception {
   final String message;
-  ServerException([this.message = 'Server error']);
+
+  /// On 429 responses: seconds until the client may retry (drives resend
+  /// timers). Null when the server didn't provide one.
+  final int? retryAfterSeconds;
+
+  ServerException([this.message = 'Server error', this.retryAfterSeconds]);
 }
 
 class NetworkException implements Exception {

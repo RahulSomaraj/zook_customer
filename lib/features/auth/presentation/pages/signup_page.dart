@@ -78,8 +78,8 @@ class _SignupPageState extends State<SignupPage> {
           } else if (state.status == AuthStatus.failure) {
             showZookAlert(context,
                 type: ZookAlertType.error,
-                title: 'Registration failed',
-                message: state.errorMessage ?? 'Please try again.');
+                title: AppStrings.registrationFailed,
+                message: state.errorMessage ?? AppStrings.pleaseTryAgain);
           }
         },
         builder: (context, state) {

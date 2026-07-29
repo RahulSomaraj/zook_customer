@@ -4,14 +4,22 @@ import 'package:equatable/equatable.dart';
 /// layers. Repositories return [Failure]s instead of throwing.
 abstract class Failure extends Equatable {
   final String message;
-  const Failure(this.message);
+
+  /// On rate-limit failures: seconds until retry is allowed (from the API's
+  /// 429 body). Null otherwise.
+  final int? retryAfterSeconds;
+
+  const Failure(this.message, {this.retryAfterSeconds});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, retryAfterSeconds];
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure([super.message = 'Something went wrong. Try again.']);
+  const ServerFailure([
+    super.message = 'Something went wrong. Try again.',
+    int? retryAfterSeconds,
+  ]) : super(retryAfterSeconds: retryAfterSeconds);
 }
 
 class NetworkFailure extends Failure {

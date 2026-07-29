@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_auth/smart_auth.dart';
 
 import '../../../../app/app_router.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -12,6 +15,12 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/zook_alert.dart';
 import '../bloc/auth_bloc.dart';
 import '../widgets/otp_input.dart';
+
+/// Matches the backend OTP length (Twilio Verify, 6 digits).
+const int kOtpLength = 6;
+
+/// Matches the backend per-phone resend cooldown (OTP_RESEND_COOLDOWN_SECONDS).
+const int kResendCooldownSeconds = 30;
 
 class OtpPage extends StatefulWidget {
   final String phoneNumber;
@@ -23,18 +32,43 @@ class OtpPage extends StatefulWidget {
 
 class _OtpPageState extends State<OtpPage> {
   String _code = '';
-  int _secondsLeft = 42;
+  int _secondsLeft = kResendCooldownSeconds;
   Timer? _timer;
+  final _otpController = OtpInputController();
+  SmartAuth? _smartAuth;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
+    _listenForSms();
   }
 
-  void _startTimer() {
+  /// Android: SMS User Consent API — works with any OTP SMS (no app-hash
+  /// needed, so it's compatible with Twilio Verify messages). The system shows
+  /// a one-tap consent sheet when the SMS arrives; on approval we read the
+  /// code, fill the boxes and auto-submit. iOS uses keyboard autofill instead
+  /// (AutofillHints.oneTimeCode on the boxes) — no listener needed.
+  Future<void> _listenForSms() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      _smartAuth = SmartAuth.instance;
+      final res = await _smartAuth!.getSmsWithUserConsentApi();
+      final sms = res.data?.code;
+      if (sms == null || !mounted) return;
+      final match = RegExp('\\d{$kOtpLength}').firstMatch(sms);
+      if (match == null) return;
+      _otpController.setCode(match.group(0)!);
+      _verify();
+    } catch (_) {
+      // Consent dismissed/timed out or Play services unavailable — the user
+      // can still type the code manually.
+    }
+  }
+
+  void _startTimer([int? seconds]) {
     _timer?.cancel();
-    setState(() => _secondsLeft = 42);
+    setState(() => _secondsLeft = seconds ?? kResendCooldownSeconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_secondsLeft == 0) {
         t.cancel();
@@ -47,11 +81,12 @@ class _OtpPageState extends State<OtpPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _smartAuth?.removeUserConsentApiListener();
     super.dispose();
   }
 
   void _verify() {
-    if (_code.length < 6) return;
+    if (_code.length < kOtpLength) return;
     context
         .read<AuthBloc>()
         .add(OtpSubmitted(phoneNumber: widget.phoneNumber, otp: _code));
@@ -60,6 +95,7 @@ class _OtpPageState extends State<OtpPage> {
   void _resend() {
     context.read<AuthBloc>().add(OtpRequested(widget.phoneNumber));
     _startTimer();
+    _listenForSms(); // re-arm consent for the new SMS
   }
 
   String get _timerLabel {
@@ -78,10 +114,14 @@ class _OtpPageState extends State<OtpPage> {
             if (state.status == AuthStatus.authenticated) {
               context.go(AppRoute.home.path);
             } else if (state.status == AuthStatus.failure) {
+              // When the API says how long to wait (429), sync our countdown.
+              if (state.retryAfterSeconds != null) {
+                _startTimer(state.retryAfterSeconds);
+              }
               showZookAlert(context,
                   type: ZookAlertType.error,
-                  title: 'Verification failed',
-                  message: state.errorMessage ?? 'Please try again.');
+                  title: AppStrings.verificationFailed,
+                  message: state.errorMessage ?? AppStrings.pleaseTryAgain);
             }
           },
           builder: (context, state) {
@@ -121,9 +161,12 @@ class _OtpPageState extends State<OtpPage> {
                   ),
                   const SizedBox(height: 28),
                   OtpInput(
-                    length: 6,
+                    length: kOtpLength,
                     onChanged: (v) => _code = v,
-                    onCompleted: (v) => _code = v,
+                    onCompleted: (v) {
+                      _code = v;
+                      _verify(); // auto-submit once all digits are in
+                    },
                   ),
                   const SizedBox(height: 28),
                   Row(

@@ -9,6 +9,12 @@ class ApiConstants {
   static const String register = '/auth/customer/register';
   static const String sendOtp = '/auth/customer/otp/send';
   static const String verifyOtp = '/auth/customer/otp/verify';
+  static const String socialGoogle = '/auth/customer/social/google';
+
+  /// Attach/verify a phone on the CURRENT authenticated user (used after a
+  /// Google signup when checkout requires a verified phone).
+  static const String phoneAttachSend = '/auth/customer/phone/send';
+  static const String phoneAttachVerify = '/auth/customer/phone/verify';
 
   // Catalog
   static const String categories = '/categories';
