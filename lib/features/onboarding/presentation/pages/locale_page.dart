@@ -53,6 +53,14 @@ class _LocalePageState extends State<LocalePage> {
   late int _language =
       context.read<LocaleCubit>().isArabic ? 1 : 0; // index into _kLanguages
 
+  /// Switch language live on tap so the whole screen (text, font, RTL)
+  /// previews the choice immediately; Continue just confirms it.
+  void _selectLanguage(int i) {
+    if (i == _language) return;
+    setState(() => _language = i);
+    context.read<LocaleCubit>().setLanguage(i == 1 ? 'ar' : 'en');
+  }
+
   void _continue() {
     // Apply + persist the chosen language app-wide (index 1 = العربية).
     context.read<LocaleCubit>().setLanguage(_language == 1 ? 'ar' : 'en');
@@ -103,7 +111,7 @@ class _LocalePageState extends State<LocalePage> {
                       child: _LanguageCard(
                         language: _kLanguages[i],
                         selected: i == _language,
-                        onTap: () => setState(() => _language = i),
+                        onTap: () => _selectLanguage(i),
                       ),
                     ),
                     if (i != _kLanguages.length - 1) const SizedBox(width: 10),

@@ -53,10 +53,29 @@ class ZookApp extends StatelessWidget {
               supportedLocales: AppLocalizations.supportedLocales,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               routerConfig: AppRouter.router,
+              // Screens read static AppStrings.x, which don't register an
+              // InheritedWidget dependency — so a locale change alone won't
+              // rebuild them. Force a full-tree rebuild when it changes.
+              builder: (context, child) => BlocListener<LocaleCubit, Locale>(
+                listenWhen: (prev, curr) => prev != curr,
+                listener: (ctx, _) => _rebuildAll(ctx as Element),
+                child: child ?? const SizedBox.shrink(),
+              ),
             );
           },
         ),
       ),
     );
   }
+}
+
+/// Marks every element below [el] dirty so static AppStrings/AppTextStyles
+/// reads pick up the new language. Only runs on a language switch.
+void _rebuildAll(Element el) {
+  void visit(Element e) {
+    e.markNeedsBuild();
+    e.visitChildren(visit);
+  }
+
+  el.visitChildren(visit);
 }
