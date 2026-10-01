@@ -143,4 +143,66 @@ class AddressCubit extends Cubit<AddressState> {
       },
     );
   }
+
+  /// Saves edits to an existing [address]. Returns true on success and
+  /// re-fetches so default flags stay consistent with the server.
+  Future<bool> edit(Address address) async {
+    if (address.id == null) return false;
+    emit(state.copyWith(status: AddressStatus.submitting, clearError: true));
+    final result = await repository.update(address);
+    return result.fold(
+      (failure) {
+        emit(state.copyWith(
+          status: AddressStatus.failure,
+          errorMessage: failure.message,
+        ));
+        return false;
+      },
+      (_) async {
+        await _refresh(keepSelected: state.selectedId);
+        return true;
+      },
+    );
+  }
+
+  /// Marks [address] as the default (server clears the others).
+  Future<bool> setDefault(Address address) async {
+    final id = address.id;
+    if (id == null || address.isDefault) return false;
+    // Optimistic: flip flags locally, roll back via refresh on failure.
+    emit(state.copyWith(addresses: [
+      for (final a in state.addresses) a.copyWith(isDefault: a.id == id),
+    ]));
+    final result = await repository.setDefault(id);
+    return result.fold(
+      (failure) async {
+        emit(state.copyWith(errorMessage: failure.message));
+        await _refresh(keepSelected: state.selectedId);
+        return false;
+      },
+      (_) => true,
+    );
+  }
+
+  Future<void> _refresh({String? keepSelected}) async {
+    final result = await repository.getAddresses();
+    result.fold(
+      (failure) => emit(state.copyWith(
+          status: AddressStatus.idle, errorMessage: failure.message)),
+      (list) {
+        String? selectedId = keepSelected;
+        if (!list.any((a) => a.id == selectedId)) {
+          final defaults = list.where((a) => a.isDefault);
+          selectedId = defaults.isNotEmpty
+              ? defaults.first.id
+              : (list.isNotEmpty ? list.first.id : null);
+        }
+        emit(AddressState(
+          status: AddressStatus.idle,
+          addresses: list,
+          selectedId: selectedId,
+        ));
+      },
+    );
+  }
 }

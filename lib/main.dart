@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 import 'core/constants/auth_config.dart';
 import 'core/di/injection.dart';
+import 'core/push/push_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,5 +34,6 @@ Future<void> main() async {
   };
 
   await initDependencies();
+  await sl<PushService>().init();
   runApp(const ZookApp());
 }

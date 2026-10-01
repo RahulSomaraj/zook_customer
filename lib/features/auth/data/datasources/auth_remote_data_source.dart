@@ -37,6 +37,9 @@ abstract class AuthRemoteDataSource {
     required String phone,
     required String code,
   });
+
+  /// Revokes [refreshToken] server-side (POST /auth/logout). Best-effort.
+  Future<void> logout(String refreshToken);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -110,6 +113,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String code,
   }) async {
     await _post(ApiConstants.phoneAttachVerify, {'phone': phone, 'code': code});
+  }
+
+  @override
+  Future<void> logout(String refreshToken) async {
+    // 204 No Content — no envelope to unwrap.
+    await client.dio.post(
+      ApiConstants.logout,
+      data: {'refreshToken': refreshToken},
+      options: Options(
+        sendTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ),
+    );
   }
 
   /// POSTs [body] and returns the unwrapped `data` object, throwing a

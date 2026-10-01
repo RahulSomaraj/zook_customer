@@ -10,6 +10,8 @@ import '../features/auth/presentation/pages/verify_phone_page.dart';
 import '../features/cart/presentation/pages/cart_page.dart';
 import '../features/category/presentation/pages/category_browse_page.dart';
 import '../features/checkout/presentation/pages/checkout_page.dart';
+import '../features/policies/data/policies_remote_data_source.dart';
+import '../features/policies/presentation/policy_page.dart';
 import '../features/checkout/presentation/pages/order_confirmed_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/onboarding/presentation/pages/locale_page.dart';
@@ -50,7 +52,8 @@ enum AppRoute {
   orderTrack('/order-track'),
   checkout('/checkout'),
   orderConfirmed('/order-confirmed'),
-  verifyPhone('/verify-phone');
+  verifyPhone('/verify-phone'),
+  policy('/policy'); // + '/{terms_and_conditions|privacy_policy}'
 
   const AppRoute(this.path);
   final String path;
@@ -76,7 +79,9 @@ class AppRouter {
     initialLocation: AppRoute.splash.path,
     redirect: (context, state) {
       final loggedIn = sl<AuthRepository>().isLoggedIn;
-      final isPublic = _publicPaths.contains(state.matchedLocation);
+      final isPublic = _publicPaths.contains(state.matchedLocation) ||
+          // Legal docs are linked from the OTP screen, before sign-in.
+          state.matchedLocation.startsWith('${AppRoute.policy.path}/');
       // Unauthenticated users can only be on public routes; send them to login.
       if (!loggedIn && !isPublic) return AppRoute.login.path;
       return null;
@@ -235,7 +240,23 @@ class AppRouter {
         path: AppRoute.orderConfirmed.path,
         name: AppRoute.orderConfirmed.name,
         parentNavigatorKey: _rootKey,
-        builder: (context, state) => const OrderConfirmedPage(),
+        // Needs the order returned by checkout; without it (deep link /
+        // restored route) there's nothing to confirm, so go home.
+        redirect: (context, state) =>
+            state.extra is CustomerOrder ? null : AppRoute.home.path,
+        builder: (context, state) =>
+            OrderConfirmedPage(order: state.extra! as CustomerOrder),
+      ),
+      GoRoute(
+        path: '${AppRoute.policy.path}/:type',
+        name: AppRoute.policy.name,
+        parentNavigatorKey: _rootKey,
+        redirect: (context, state) =>
+            PolicyTypeX.fromApi(state.pathParameters['type'] ?? '') == null
+                ? AppRoute.home.path
+                : null,
+        builder: (context, state) => PolicyPage(
+            type: PolicyTypeX.fromApi(state.pathParameters['type']!)!),
       ),
       GoRoute(
         path: AppRoute.verifyPhone.path,

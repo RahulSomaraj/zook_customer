@@ -9,8 +9,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../address/presentation/cubit/address_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../orders/data/orders_mock.dart';
-import '../../../orders/domain/entities/customer_order.dart';
+import '../../../orders/domain/entities/orders_page_result.dart';
+import '../../../orders/presentation/cubit/orders_cubit.dart';
 import '../../../wishlist/presentation/cubit/wishlist_cubit.dart';
 
 /// Profile tab — header, stats, sectioned menu, and logout.
@@ -44,8 +44,9 @@ class ProfilePage extends StatelessWidget {
     final savedCount = context.watch<WishlistCubit>().state.ids.length;
     WidgetsBinding.instance.addPostFrameCallback(
         (_) => context.read<WishlistCubit>().loadServer());
-    final orderCount = kMockOrders.length;
-    final activeCount = kMockOrders.where((o) => o.status.isActive).length;
+    final orders = context.watch<OrdersCubit>().state;
+    final orderCount = orders.count(OrderFilter.all);
+    final activeCount = orders.count(OrderFilter.active);
 
     return BlocProvider<AddressCubit>(
       create: (_) => sl<AddressCubit>()..load(),
@@ -167,9 +168,19 @@ class ProfilePage extends StatelessWidget {
                   icon: Icons.lock_outline,
                   iconColor: AppColors.mid,
                   iconBg: AppColors.surface,
-                  label: 'Privacy & Security',
-                  sub: 'Password, data, permissions',
-                  onTap: () => _soon(context),
+                  label: 'Privacy Policy',
+                  sub: 'How we use your data',
+                  onTap: () => context.push(
+                      '${AppRoute.policy.path}/privacy_policy'),
+                ),
+                _MenuItem(
+                  icon: Icons.description_outlined,
+                  iconColor: AppColors.mid,
+                  iconBg: AppColors.surface,
+                  label: 'Terms & Conditions',
+                  sub: 'Buying on Zook',
+                  onTap: () => context.push(
+                      '${AppRoute.policy.path}/terms_and_conditions'),
                 ),
                 _MenuItem(
                   icon: Icons.chat_bubble_outline,

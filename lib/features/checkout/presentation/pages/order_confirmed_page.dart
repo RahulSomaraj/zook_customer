@@ -1,35 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../cart/domain/entities/cart_item.dart';
-import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../../orders/domain/entities/customer_order.dart';
 import '../../../../core/widgets/z_icon.dart';
 
-/// Order confirmation. Snapshots the cart, then clears it.
-class OrderConfirmedPage extends StatefulWidget {
-  const OrderConfirmedPage({super.key});
+/// Order confirmation for the order returned by checkout. (The server has
+/// already emptied the cart; CheckoutCubit reset the local one.)
+class OrderConfirmedPage extends StatelessWidget {
+  final CustomerOrder order;
+  const OrderConfirmedPage({super.key, required this.order});
 
-  @override
-  State<OrderConfirmedPage> createState() => _OrderConfirmedPageState();
-}
-
-class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
-  late final List<CartItem> _items;
-  late final int _total;
-
-  @override
-  void initState() {
-    super.initState();
-    final cart = context.read<CartCubit>();
-    _items = List.of(cart.state.items);
-    _total = cart.state.total;
-    // Clear the cart after capturing the order snapshot.
-    WidgetsBinding.instance.addPostFrameCallback((_) => cart.clear());
+  String get _eta {
+    final at = order.estimatedDeliveryAt;
+    return at == null
+        ? 'Estimated delivery in 2–4 days'
+        : 'Estimated delivery: ${DateFormat('EEE d MMM').format(at)}';
   }
 
   @override
@@ -64,7 +54,9 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Your order is confirmed and payment received. Vendors are packing your items now.',
+                  order.isCod
+                      ? 'Your order is confirmed. Pay AED ${formatAmount(order.totalAed)} in cash when it arrives — vendors are packing your items now.'
+                      : 'Your order is confirmed and payment received. Vendors are packing your items now.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.subtitle,
                 ),
@@ -82,13 +74,13 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ORDER #ORD-041',
+                    Text('ORDER #${order.id}',
                         style: AppTextStyles.caption.copyWith(
                             fontSize: 11,
                             color: AppColors.light,
                             letterSpacing: 0.7)),
                     const SizedBox(height: 10),
-                    for (final item in _items) _OrderItem(item: item),
+                    for (final item in order.items) _OrderItem(item: item),
                     Container(
                       margin: const EdgeInsets.only(top: 10),
                       padding: const EdgeInsets.only(top: 10),
@@ -99,11 +91,11 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Total paid',
+                          Text(order.isCod ? 'Total to pay' : 'Total paid',
                               style: AppTextStyles.body.copyWith(
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.black)),
-                          Text('AED ${formatAmount(_total)}',
+                          Text('AED ${formatAmount(order.totalAed)}',
                               style: AppTextStyles.body.copyWith(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
@@ -134,12 +126,12 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Estimated delivery: Wed 10 Jun',
+                          Text(_eta,
                               style: AppTextStyles.body.copyWith(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.primaryDark)),
-                          Text("Porter.ae · You'll get a tracking link by SMS",
+                          Text("You'll get a tracking update once it ships",
                               style: AppTextStyles.caption.copyWith(
                                   fontSize: 11, color: AppColors.primaryLight)),
                         ],
@@ -157,7 +149,11 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => context.go(AppRoute.orders.path),
+                        onPressed: () {
+                          // Orders tab underneath, tracking on top.
+                          context.go(AppRoute.orders.path);
+                          context.push(AppRoute.orderTrack.path, extra: order);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.black,
                           elevation: 0,
@@ -209,12 +205,11 @@ class _OrderConfirmedPageState extends State<OrderConfirmedPage> {
 }
 
 class _OrderItem extends StatelessWidget {
-  final CartItem item;
+  final OrderLine item;
   const _OrderItem({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final p = item.product;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -223,31 +218,39 @@ class _OrderItem extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: p.imageGradient),
+              gradient: LinearGradient(colors: item.gradient),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: AppColors.border),
             ),
+            clipBehavior: Clip.antiAlias,
             alignment: Alignment.center,
-            child: Text(p.emoji, style: const TextStyle(fontSize: 20)),
+            child: item.imageUrl.isEmpty
+                ? Text(item.emoji, style: const TextStyle(fontSize: 20))
+                : Image.network(item.imageUrl,
+                    fit: BoxFit.cover,
+                    width: 44,
+                    height: 44,
+                    errorBuilder: (_, __, ___) => Text(item.emoji,
+                        style: const TextStyle(fontSize: 20))),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.name,
+                Text(item.quantity > 1 ? '${item.name} ×${item.quantity}' : item.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.body.copyWith(
                         fontSize: 12, fontWeight: FontWeight.w700)),
-                if (p.store != null)
-                  Text(p.store!,
+                if (item.storeName != null)
+                  Text(item.storeName!,
                       style: AppTextStyles.caption
                           .copyWith(fontSize: 11, color: AppColors.light)),
               ],
             ),
           ),
-          Text('AED ${formatAmount(p.priceAed)}',
+          Text('AED ${formatAmount(item.priceAed)}',
               style: AppTextStyles.body.copyWith(
                   fontSize: 13, fontWeight: FontWeight.w800)),
         ],

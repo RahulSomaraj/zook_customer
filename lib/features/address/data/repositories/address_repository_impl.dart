@@ -49,4 +49,30 @@ class AddressRepositoryImpl implements AddressRepository {
       return const Left(ServerFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, Unit>> update(Address address) => _guard(() {
+        // toJson omits empty optionals; on PATCH that would keep the old
+        // value, so send explicit nulls to clear fields the user emptied.
+        final json = AddressModel.fromEntity(address).toJson();
+        for (final key in const ['line2', 'postalCode', 'landmark']) {
+          json.putIfAbsent(key, () => null);
+        }
+        return remoteDataSource.update(address.id!, json);
+      });
+
+  @override
+  Future<Either<Failure, Unit>> setDefault(String id) =>
+      _guard(() => remoteDataSource.update(id, {'isDefault': true}));
+
+  Future<Either<Failure, Unit>> _guard(Future<void> Function() action) async {
+    try {
+      await action();
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(ServerFailure());
+    }
+  }
 }

@@ -115,6 +115,11 @@ class _AddressesView extends StatelessWidget {
                             selected: a.id == state.selectedId,
                             onTap: () => cubit.select(a),
                             onRemove: () => _confirmRemove(context, cubit, a),
+                            onEdit: () => AddAddressSheet.show(context, cubit,
+                                initial: a),
+                            onSetDefault: a.isDefault
+                                ? null
+                                : () => cubit.setDefault(a),
                           ),
                         const SizedBox(height: 6),
                         _AddButton(
@@ -193,11 +198,15 @@ class _AddressCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback onRemove;
+  final VoidCallback onEdit;
+  final VoidCallback? onSetDefault;
   const _AddressCard({
     required this.address,
     required this.selected,
     required this.onTap,
     required this.onRemove,
+    required this.onEdit,
+    this.onSetDefault,
   });
 
   @override
@@ -282,6 +291,17 @@ class _AddressCard extends StatelessWidget {
                   Text(address.phone,
                       style: AppTextStyles.caption
                           .copyWith(fontSize: 12, color: AppColors.light)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _CardAction(label: 'Edit', onTap: onEdit),
+                      if (onSetDefault != null) ...[
+                        const SizedBox(width: 16),
+                        _CardAction(
+                            label: 'Set as default', onTap: onSetDefault!),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -297,6 +317,25 @@ class _AddressCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CardAction extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _CardAction({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Text(label,
+          style: AppTextStyles.caption.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary)),
     );
   }
 }

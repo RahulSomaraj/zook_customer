@@ -16,10 +16,17 @@ abstract class Failure extends Equatable {
 }
 
 class ServerFailure extends Failure {
+  /// API error code, when the server sent one (see [ServerException.code]).
+  final String? code;
+
   const ServerFailure([
     super.message = 'Something went wrong. Try again.',
     int? retryAfterSeconds,
+    this.code,
   ]) : super(retryAfterSeconds: retryAfterSeconds);
+
+  @override
+  List<Object?> get props => [...super.props, code];
 }
 
 class NetworkFailure extends Failure {

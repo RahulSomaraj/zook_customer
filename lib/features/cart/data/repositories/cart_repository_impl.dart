@@ -18,7 +18,7 @@ class CartRepositoryImpl implements CartRepository {
       // generic covariance surprises downstream.
       return Right(List<CartItem>.from(items));
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ServerFailure(e.message, null, e.code));
     } catch (_) {
       return const Left(ServerFailure());
     }
@@ -45,7 +45,7 @@ class CartRepositoryImpl implements CartRepository {
       await action();
       return const Right(unit);
     } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
+      return Left(ServerFailure(e.message, null, e.code));
     } catch (_) {
       return const Left(ServerFailure());
     }

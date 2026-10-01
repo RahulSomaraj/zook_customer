@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../product/domain/entities/product.dart';
 import '../../domain/entities/cart_item.dart';
 import '../../domain/repositories/cart_repository.dart';
@@ -80,6 +81,47 @@ class CartCubit extends Cubit<CartState> {
     final result = await repository.clearCart();
     result.fold(
         (f) => debugPrint('cart clear sync failed: ${f.message}'), (_) {});
+  }
+
+  /// Makes the server cart match the local cart (checkout converts the
+  /// SERVER cart, and local-first mutations may not all have synced).
+  /// Returns null on success, else the first failure (with its API code,
+  /// e.g. `INSUFFICIENT_STOCK`).
+  Future<Failure?> syncToServer() async {
+    final remote = await repository.getCart();
+    return remote.fold<Future<Failure?>>((f) async => f, (serverItems) async {
+      final serverQty = {
+        for (final i in serverItems) i.product.id: i.quantity,
+      };
+      final localQty = {for (final i in state.items) i.product.id: i.quantity};
+
+      for (final id in serverQty.keys) {
+        if (!localQty.containsKey(id)) {
+          final r = await repository.removeItem(id);
+          if (r.isLeft()) return r.fold((f) => f, (_) => null);
+        }
+      }
+      for (final entry in localQty.entries) {
+        final server = serverQty[entry.key];
+        if (server == entry.value) continue;
+        final r = server == null
+            ? await repository.addItem(entry.key, entry.value)
+            : await repository.updateItem(entry.key, entry.value);
+        if (r.isLeft()) return r.fold((f) => f, (_) => null);
+      }
+      return null;
+    });
+  }
+
+  /// Replaces the local cart with the server cart (e.g. after checkout
+  /// reports a stock/availability problem).
+  Future<void> reload() async {
+    _loaded = true;
+    final result = await repository.getCart();
+    result.fold(
+      (failure) => debugPrint('CartCubit.reload failed: ${failure.message}'),
+      (items) => emit(state.copyWith(items: items)),
+    );
   }
 
   /// Clears the cart and re-arms the one-shot fetch so the next login

@@ -104,6 +104,19 @@ class _OtpPageState extends State<OtpPage> {
     return '$m:$s';
   }
 
+  /// Tappable legal-doc link inside the terms sentence.
+  InlineSpan _link(BuildContext context, String text, String type) =>
+      WidgetSpan(
+        alignment: PlaceholderAlignment.baseline,
+        baseline: TextBaseline.alphabetic,
+        child: GestureDetector(
+          onTap: () => context.push('${AppRoute.policy.path}/$type'),
+          child: Text(text,
+              style: AppTextStyles.caption
+                  .copyWith(fontSize: 11, color: AppColors.primary)),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -213,13 +226,10 @@ class _OtpPageState extends State<OtpPage> {
                         text: '${AppStrings.termsPrefix} ',
                         style: AppTextStyles.caption.copyWith(fontSize: 11),
                         children: [
-                          TextSpan(
-                              text: AppStrings.terms,
-                              style: const TextStyle(color: AppColors.primary)),
+                          _link(context, AppStrings.terms,
+                              'terms_and_conditions'),
                           TextSpan(text: ' ${AppStrings.and} '),
-                          TextSpan(
-                              text: AppStrings.privacy,
-                              style: const TextStyle(color: AppColors.primary)),
+                          _link(context, AppStrings.privacy, 'privacy_policy'),
                         ],
                       ),
                       textAlign: TextAlign.center,

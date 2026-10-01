@@ -17,6 +17,11 @@ abstract class AddressRemoteDataSource {
 
   /// Removes an address. `DELETE /customers/addresses/{id}`.
   Future<void> delete(String id);
+
+  /// Partially updates an address. `PATCH /customers/addresses/{id}`.
+  /// Sending `{isDefault: true}` also clears the flag on the others
+  /// (server-side, in one transaction).
+  Future<AddressModel?> update(String id, Map<String, dynamic> changes);
 }
 
 class AddressRemoteDataSourceImpl implements AddressRemoteDataSource {
@@ -95,6 +100,18 @@ class AddressRemoteDataSourceImpl implements AddressRemoteDataSource {
       if (data is Map && data['success'] == false) {
         throw ServerException(_messageFrom(data.cast<String, dynamic>()));
       }
+    } on DioException catch (e) {
+      throw _asServerException(e);
+    }
+  }
+
+  @override
+  Future<AddressModel?> update(String id, Map<String, dynamic> changes) async {
+    try {
+      final res =
+          await client.dio.patch(ApiConstants.addressItem(id), data: changes);
+      final data = _unwrap((res.data as Map).cast<String, dynamic>());
+      return data == null ? null : AddressModel.fromJson(data);
     } on DioException catch (e) {
       throw _asServerException(e);
     }

@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../data/orders_mock.dart';
 import '../../domain/entities/customer_order.dart';
+import '../../domain/entities/orders_page_result.dart';
+import '../cubit/orders_cubit.dart';
 
-enum _OrderFilter { all, active, shipped, delivered }
+/// Tabs shown on the Orders screen (cancelled orders appear under All).
+const _tabs = [
+  OrderFilter.all,
+  OrderFilter.active,
+  OrderFilter.shipped,
+  OrderFilter.delivered,
+];
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -18,52 +26,47 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  _OrderFilter _filter = _OrderFilter.all;
+  final _scroll = ScrollController();
 
-  List<CustomerOrder> get _orders => kMockOrders;
-
-  int _count(_OrderFilter f) {
-    switch (f) {
-      case _OrderFilter.all:
-        return _orders.length;
-      case _OrderFilter.active:
-        return _orders.where((o) => o.status.isActive).length;
-      case _OrderFilter.shipped:
-        return _orders.where((o) => o.status == OrderStatus.shipped).length;
-      case _OrderFilter.delivered:
-        return _orders.where((o) => o.status == OrderStatus.delivered).length;
-    }
+  @override
+  void initState() {
+    super.initState();
+    // Always refresh when the tab opens — statuses change server-side.
+    context.read<OrdersCubit>().refresh();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >
+          _scroll.position.maxScrollExtent - 300) {
+        context.read<OrdersCubit>().loadMore();
+      }
+    });
   }
 
-  List<CustomerOrder> get _filtered {
-    switch (_filter) {
-      case _OrderFilter.all:
-        return _orders;
-      case _OrderFilter.active:
-        return _orders.where((o) => o.status.isActive).toList();
-      case _OrderFilter.shipped:
-        return _orders.where((o) => o.status == OrderStatus.shipped).toList();
-      case _OrderFilter.delivered:
-        return _orders.where((o) => o.status == OrderStatus.delivered).toList();
-    }
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
   }
 
-  String _label(_OrderFilter f) {
-    final n = _count(f);
+  String _label(OrderFilter f, OrdersState state) {
+    final n = state.count(f);
     switch (f) {
-      case _OrderFilter.all:
+      case OrderFilter.all:
         return 'All ($n)';
-      case _OrderFilter.active:
+      case OrderFilter.active:
         return 'Active ($n)';
-      case _OrderFilter.shipped:
+      case OrderFilter.shipped:
         return 'Shipped ($n)';
-      case _OrderFilter.delivered:
+      case OrderFilter.delivered:
         return 'Delivered ($n)';
+      case OrderFilter.cancelled:
+        return 'Cancelled ($n)';
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<OrdersCubit>().state;
+    final cubit = context.read<OrdersCubit>();
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
@@ -94,36 +97,76 @@ class _OrdersPageState extends State<OrdersPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    for (final f in _OrderFilter.values) ...[
+                    for (final f in _tabs) ...[
                       _FilterPill(
-                        label: _label(f),
-                        active: f == _filter,
-                        onTap: () => setState(() => _filter = f),
+                        label: _label(f, state),
+                        active: f == state.filter,
+                        onTap: () => cubit.load(filter: f),
                       ),
-                      if (f != _OrderFilter.values.last)
-                        const SizedBox(width: 6),
+                      if (f != _tabs.last) const SizedBox(width: 6),
                     ],
                   ],
                 ),
               ),
             ),
             Expanded(
-              child: _filtered.isEmpty
-                  ? Center(
-                      child: Text('No orders here yet.',
-                          style: AppTextStyles.body
-                              .copyWith(color: AppColors.mid)),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      itemCount: _filtered.length,
-                      itemBuilder: (context, i) =>
-                          _OrderCard(order: _filtered[i]),
-                    ),
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: cubit.refresh,
+                child: _body(state),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _body(OrdersState state) {
+    // Scrollable in every state so pull-to-refresh always works.
+    Widget message(String text, {bool retry = false}) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            Center(
+              child: Text(text,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body.copyWith(color: AppColors.mid)),
+            ),
+            if (retry)
+              Center(
+                child: TextButton(
+                  onPressed: context.read<OrdersCubit>().refresh,
+                  child: const Text('Retry'),
+                ),
+              ),
+          ],
+        );
+
+    if (state.items.isEmpty) {
+      if (state.loading || !state.loaded) {
+        return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary));
+      }
+      if (state.error != null) return message(state.error!, retry: true);
+      return message(state.filter == OrderFilter.all
+          ? 'No orders yet.\nItems you buy will show up here.'
+          : 'No orders here yet.');
+    }
+
+    return ListView.builder(
+      controller: _scroll,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 12),
+      itemCount: state.items.length + (state.loadingMore ? 1 : 0),
+      itemBuilder: (context, i) => i < state.items.length
+          ? _OrderCard(order: state.items[i])
+          : const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.primary)),
+            ),
     );
   }
 }
@@ -210,7 +253,11 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Whole card opens detail/tracking (also for delivered/cancelled orders).
+    return GestureDetector(
+      onTap: () => _track(context),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -230,16 +277,19 @@ class _OrderCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text('#${order.id}',
+                Expanded(
+                  child: Text('#${order.id}',
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppColors.mid)),
+                ),
                 const SizedBox(width: 10),
                 Text(order.dateLabel,
                     style: AppTextStyles.caption.copyWith(fontSize: 11)),
-                const Spacer(),
+                const SizedBox(width: 8),
                 StatusPill(status: order.status),
               ],
             ),
@@ -288,6 +338,7 @@ class _OrderCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -336,7 +387,15 @@ class _ItemRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: AppColors.border),
           ),
-          child: Text(line.emoji, style: const TextStyle(fontSize: 20)),
+          clipBehavior: Clip.antiAlias,
+          child: line.imageUrl.isEmpty
+              ? Text(line.emoji, style: const TextStyle(fontSize: 20))
+              : Image.network(line.imageUrl,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Text(line.emoji, style: const TextStyle(fontSize: 20))),
         ),
         const SizedBox(width: 10),
         Expanded(

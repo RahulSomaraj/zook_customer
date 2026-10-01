@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/customer_order.dart';
+import '../../domain/entities/shipment_tracking.dart';
+import '../../domain/repositories/orders_repository.dart';
+import '../cubit/order_tracking_cubit.dart';
 
 class _Step {
   final String title;
@@ -11,13 +17,30 @@ class _Step {
   const _Step(this.title, this.time);
 }
 
+/// Order tracking. For API orders it refreshes the order and shows per-parcel
+/// status plus live courier events; mock orders render as passed in.
 class OrderTrackingPage extends StatelessWidget {
   final CustomerOrder order;
   const OrderTrackingPage({super.key, required this.order});
 
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => OrderTrackingCubit(
+        repository: sl<OrdersRepository>(),
+        order: order,
+      )..load(),
+      child: const _TrackingView(),
+    );
+  }
+}
+
+class _TrackingView extends StatelessWidget {
+  const _TrackingView();
+
   /// Index of the currently-active step (5 = all done / delivered).
-  int get _currentIndex {
-    switch (order.status) {
+  static int _currentIndex(OrderStatus status) {
+    switch (status) {
       case OrderStatus.confirmed:
         return 0;
       case OrderStatus.preparing:
@@ -31,199 +54,355 @@ class OrderTrackingPage extends StatelessWidget {
     }
   }
 
+  static String _headline(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.confirmed:
+        return 'Order confirmed';
+      case OrderStatus.preparing:
+        return 'Being packed';
+      case OrderStatus.shipped:
+        return 'On the way to you';
+      case OrderStatus.delivered:
+        return 'Delivered';
+      case OrderStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final steps = [
-      _Step('Order confirmed', '${order.dateLabel} · Payment received'),
-      _Step('Packed & ready for pickup',
-          '${order.dateLabel} · Packing photos verified'),
-      _Step('Picked up by courier',
-          '${order.dateLabel} · Collected by courier'),
-      const _Step('Out for delivery', 'Est. delivery by 5:30 PM today'),
-      const _Step('Delivered', '—'),
-    ];
+    return BlocBuilder<OrderTrackingCubit, OrderTrackingState>(
+      builder: (context, state) {
+        final cubit = context.read<OrderTrackingCubit>();
+        final order = state.order;
+        final line = state.line;
+        final status = state.currentStatus;
+        final tracking = state.currentTracking;
+        final isLive = order.orderId.isNotEmpty;
+        final current = _currentIndex(status);
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                border: Border(bottom: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    behavior: HitTestBehavior.opaque,
-                    child: const Icon(Icons.arrow_back,
-                        size: 20, color: AppColors.mid),
+        final eta = order.estimatedDeliveryAt;
+        final etaLabel = eta != null
+            ? DateFormat('d MMM').format(eta)
+            : (order.etaLabel.isEmpty ? '—' : order.etaLabel);
+        final courier = tracking?.courierName ?? line?.courierName;
+        final awb = tracking?.awbNumber ??
+            ((line?.awb ?? '').isNotEmpty ? line!.awb! : order.awb);
+        final hasCourier = awb.isNotEmpty;
+
+        final steps = [
+          _Step('Order confirmed',
+              '${order.dateLabel} · ${order.isCod ? 'Cash on delivery' : 'Payment received'}'),
+          const _Step('Packed & ready for pickup', 'Packing photos verified'),
+          const _Step('Picked up by courier', 'Collected by courier'),
+          _Step('Out for delivery',
+              eta != null ? 'Est. delivery ${DateFormat('EEE d MMM').format(eta)}' : 'On its way'),
+          const _Step('Delivered', '—'),
+        ];
+
+        return Scaffold(
+          backgroundColor: AppColors.surface,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  decoration: const BoxDecoration(
+                    color: AppColors.white,
+                    border:
+                        Border(bottom: BorderSide(color: AppColors.border)),
                   ),
-                  const SizedBox(width: 10),
-                  Text('Track Order',
-                      style: AppTextStyles.title
-                          .copyWith(fontSize: 16, color: AppColors.black)),
-                  const Spacer(),
-                  Text('#${order.id}',
-                      style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.light)),
-                ],
-              ),
-            ),
-            const _TrackMap(),
-            // Status bar
-            Container(
-              width: double.infinity,
-              color: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  const Icon(Icons.local_shipping_outlined,
-                      size: 24, color: AppColors.white),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          order.status == OrderStatus.delivered
-                              ? 'Delivered'
-                              : 'On the way to you',
-                          style: AppTextStyles.body.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.white),
-                        ),
-                        const SizedBox(height: 1),
-                        Text('${order.courierName} · AWB: ${order.awb}',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color:
-                                    AppColors.white.withValues(alpha: 0.65))),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Row(
                     children: [
-                      Text(order.etaLabel,
-                          style: AppTextStyles.body.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.white)),
-                      Text('Estimated arrival',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color:
-                                  AppColors.white.withValues(alpha: 0.55))),
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        behavior: HitTestBehavior.opaque,
+                        child: const Icon(Icons.arrow_back,
+                            size: 20, color: AppColors.mid),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('Track Order',
+                          style: AppTextStyles.title.copyWith(
+                              fontSize: 16, color: AppColors.black)),
+                      const Spacer(),
+                      Flexible(
+                        child: Text('#${order.id}',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.light)),
+                      ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < steps.length; i++)
-                            _TimelineStep(
-                              step: steps[i],
-                              index: i,
-                              isLast: i == steps.length - 1,
-                              state: i < _currentIndex
-                                  ? _StepState.done
-                                  : i == _currentIndex
-                                      ? _StepState.active
-                                      : _StepState.pending,
+                ),
+                if (state.loading)
+                  const LinearProgressIndicator(
+                      minHeight: 2, color: AppColors.primary),
+                const _TrackMap(),
+                // Status bar
+                Container(
+                  width: double.infinity,
+                  color: status == OrderStatus.cancelled
+                      ? AppColors.mid
+                      : AppColors.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_shipping_outlined,
+                          size: 24, color: AppColors.white),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _headline(status),
+                              style: AppTextStyles.body.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.white),
                             ),
+                            const SizedBox(height: 1),
+                            Text(
+                                hasCourier
+                                    ? '${courier ?? 'Courier'} · AWB: $awb'
+                                    : 'Awaiting courier pickup',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.white
+                                        .withValues(alpha: 0.65))),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(etaLabel,
+                              style: AppTextStyles.body.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.white)),
+                          Text('Estimated arrival',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.white
+                                      .withValues(alpha: 0.55))),
                         ],
                       ),
-                    ),
-                    _Panel(
-                      title: 'Your courier',
-                      child: Row(
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: cubit.load,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
+                          if (state.error != null)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                              child: Text(state.error!,
+                                  style: AppTextStyles.caption.copyWith(
+                                      fontSize: 12,
+                                      color: AppColors.primary)),
                             ),
-                            child: const Icon(Icons.local_shipping_outlined,
-                                size: 20, color: AppColors.charcoal),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
+                          if (order.items.length > 1)
+                            _PackageSelector(
+                              items: order.items,
+                              selected: state.selected,
+                              onSelect: cubit.select,
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(order.courierName,
-                                    style: AppTextStyles.body.copyWith(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.black)),
-                                Text(order.courierMeta,
-                                    style: AppTextStyles.caption
-                                        .copyWith(fontSize: 11)),
-                                const SizedBox(height: 2),
-                                Text('AWB: ${order.awb}',
-                                    style: const TextStyle(
-                                        fontFamily: 'monospace',
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary)),
+                                for (var i = 0; i < steps.length; i++)
+                                  _TimelineStep(
+                                    step: steps[i],
+                                    index: i,
+                                    isLast: i == steps.length - 1,
+                                    state: i < current
+                                        ? _StepState.done
+                                        : i == current
+                                            ? _StepState.active
+                                            : _StepState.pending,
+                                  ),
                               ],
                             ),
                           ),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primaryPale,
-                              shape: BoxShape.circle,
+                          if (tracking != null && tracking.events.isNotEmpty)
+                            _Panel(
+                              title: 'Courier updates',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (final e in tracking.events)
+                                    _EventRow(event: e),
+                                ],
+                              ),
                             ),
-                            child: const Icon(Icons.call,
-                                size: 18, color: AppColors.primary),
+                          if (hasCourier)
+                            _Panel(
+                              title: 'Your courier',
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border:
+                                          Border.all(color: AppColors.border),
+                                    ),
+                                    child: const Icon(
+                                        Icons.local_shipping_outlined,
+                                        size: 20,
+                                        color: AppColors.charcoal),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(courier ?? 'Courier',
+                                            style: AppTextStyles.body.copyWith(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.black)),
+                                        if (!isLive &&
+                                            order.courierMeta.isNotEmpty)
+                                          Text(order.courierMeta,
+                                              style: AppTextStyles.caption
+                                                  .copyWith(fontSize: 11)),
+                                        const SizedBox(height: 2),
+                                        Text('AWB: $awb',
+                                            style: const TextStyle(
+                                                fontFamily: 'monospace',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.primary)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          _Panel(
+                            title: 'Items in this order',
+                            bottomMargin: 16,
+                            child: Column(
+                              children: [
+                                for (var i = 0; i < order.items.length; i++) ...[
+                                  _ItemMini(line: order.items[i]),
+                                  if (i != order.items.length - 1)
+                                    const SizedBox(height: 10),
+                                ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    _Panel(
-                      title: 'Items in this order',
-                      bottomMargin: 16,
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < order.items.length; i++) ...[
-                            _ItemMini(line: order.items[i]),
-                            if (i != order.items.length - 1)
-                              const SizedBox(height: 10),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Chips to switch between parcels when an order has several vendors.
+class _PackageSelector extends StatelessWidget {
+  final List<OrderLine> items;
+  final int selected;
+  final ValueChanged<int> onSelect;
+  const _PackageSelector({
+    required this.items,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final active = i == selected;
+          final status = items[i].status;
+          return GestureDetector(
+            onTap: () => onSelect(i),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active ? AppColors.black : AppColors.white,
+                borderRadius: BorderRadius.circular(9999),
+                border: Border.all(
+                    color: active ? AppColors.black : AppColors.border),
+              ),
+              child: Text(
+                'Package ${i + 1}${status != null ? ' · ${status.label}' : ''}',
+                style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: active ? AppColors.white : AppColors.charcoal),
               ),
             ),
-          ],
-        ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EventRow extends StatelessWidget {
+  final TrackingEvent event;
+  const _EventRow({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final at = event.occurredAt;
+    final meta = [
+      if (at != null) DateFormat('d MMM · h:mm a').format(at),
+      if ((event.hubName ?? '').isNotEmpty) event.hubName!,
+    ].join(' · ');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(event.label,
+              style: AppTextStyles.body.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.black)),
+          if ((event.description ?? '').isNotEmpty)
+            Text(event.description!,
+                style: AppTextStyles.caption.copyWith(fontSize: 11)),
+          if (meta.isNotEmpty)
+            Text(meta,
+                style: AppTextStyles.caption
+                    .copyWith(fontSize: 10, color: AppColors.light)),
+        ],
       ),
     );
   }
@@ -409,7 +588,15 @@ class _ItemMini extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: AppColors.border),
           ),
-          child: Text(line.emoji, style: const TextStyle(fontSize: 20)),
+          clipBehavior: Clip.antiAlias,
+          child: line.imageUrl.isEmpty
+              ? Text(line.emoji, style: const TextStyle(fontSize: 20))
+              : Image.network(line.imageUrl,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Text(line.emoji, style: const TextStyle(fontSize: 20))),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -424,7 +611,12 @@ class _ItemMini extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: AppColors.black)),
               const SizedBox(height: 1),
-              Text(line.packageLabel,
+              Text(
+                  [
+                    line.packageLabel,
+                    if (line.status != null) line.status!.label,
+                    if ((line.storeName ?? '').isNotEmpty) line.storeName!,
+                  ].join(' · '),
                   style: AppTextStyles.caption.copyWith(fontSize: 10)),
             ],
           ),

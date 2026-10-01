@@ -74,19 +74,39 @@ extension OrderStatusX on OrderStatus {
   }
 }
 
-/// A single line item within an order.
+/// A single line item within an order. From the API, one line = one
+/// sub-order (one vendor parcel with its own status and courier AWB).
 class OrderLine {
   final String name;
   final String emoji;
   final int priceAed;
   final List<Color> gradient;
   final String packageLabel;
+
+  // API fields (empty for mock data).
+  final String subOrderId;
+  final String subOrderNumber;
+  final OrderStatus? status;
+  final int quantity;
+  final String imageUrl;
+  final String? storeName;
+  final String? courierName;
+  final String? awb;
+
   const OrderLine({
     required this.name,
     required this.emoji,
     required this.priceAed,
     required this.gradient,
     required this.packageLabel,
+    this.subOrderId = '',
+    this.subOrderNumber = '',
+    this.status,
+    this.quantity = 1,
+    this.imageUrl = '',
+    this.storeName,
+    this.courierName,
+    this.awb,
   });
 }
 
@@ -101,6 +121,17 @@ class CustomerOrder {
   final String awb;
   final String etaLabel;
 
+  // API fields (defaults for mock data).
+  /// Server UUID — use this for API calls; [id] is the display number.
+  final String orderId;
+  final String paymentMethod; // prepaid | cod
+  final String paymentStatus; // pending | paid | …
+  final int subtotalAed;
+  final int deliveryFeeAed;
+  final int? _totalAmountAed;
+  final DateTime? estimatedDeliveryAt;
+  final DateTime? createdAt;
+
   const CustomerOrder({
     required this.id,
     required this.dateLabel,
@@ -110,8 +141,19 @@ class CustomerOrder {
     this.courierMeta = 'Express delivery · Dubai',
     this.awb = '',
     this.etaLabel = '~45 min',
-  });
+    this.orderId = '',
+    this.paymentMethod = 'prepaid',
+    this.paymentStatus = 'paid',
+    this.subtotalAed = 0,
+    this.deliveryFeeAed = 0,
+    int? totalAmountAed,
+    this.estimatedDeliveryAt,
+    this.createdAt,
+  }) : _totalAmountAed = totalAmountAed;
 
+  /// Server total when known, else the sum of the lines (mock data).
   int get totalAed =>
-      items.fold(0, (sum, line) => sum + line.priceAed);
+      _totalAmountAed ?? items.fold(0, (sum, line) => sum + line.priceAed);
+
+  bool get isCod => paymentMethod == 'cod';
 }

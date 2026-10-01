@@ -1,6 +1,6 @@
 import '../repositories/auth_repository.dart';
 
-/// Clears the stored session (access/refresh tokens).
+/// Revokes the session server-side, then clears the stored tokens.
 class Logout {
   final AuthRepository repository;
   Logout(this.repository);

@@ -4,26 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_router.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/countries/countries_remote_data_source.dart';
+import '../../../../core/countries/country.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/locale/locale_cubit.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
-
-/// A selectable country/currency option.
-class _Country {
-  final String flag;
-  final String name;
-  final String meta;
-  const _Country(this.flag, this.name, this.meta);
-}
-
-const List<_Country> _kCountries = [
-  _Country('🇦🇪', 'United Arab Emirates', 'AED · +971'),
-  _Country('🇶🇦', 'Qatar', 'QAR · +974'),
-  _Country('🇸🇦', 'Saudi Arabia', 'SAR · +966'),
-  _Country('🇴🇲', 'Oman', 'OMR · +968'),
-  _Country('🇰🇼', 'Kuwait', 'KWD · +965'),
-];
 
 /// A selectable language option ("Hello" greeting + name).
 class _Language {
@@ -49,7 +36,36 @@ class LocalePage extends StatefulWidget {
 }
 
 class _LocalePageState extends State<LocalePage> {
+  List<Country> _countries = Country.fallback;
   int _country = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCountries();
+  }
+
+  /// Active countries from the API (default first); keeps the built-in list
+  /// if offline. Re-selects the saved country when there is one.
+  Future<void> _loadCountries() async {
+    try {
+      final list = await sl<CountriesRemoteDataSource>().getCountries();
+      if (!mounted || list.isEmpty) return;
+      _applyCountries(list);
+    } catch (_) {
+      if (mounted) _applyCountries(_countries);
+    }
+  }
+
+  void _applyCountries(List<Country> list) {
+    final saved = context.read<LocaleCubit>().countryCode;
+    var index = saved == null ? -1 : list.indexWhere((c) => c.iso2 == saved);
+    if (index < 0) index = list.indexWhere((c) => c.isDefault);
+    setState(() {
+      _countries = list;
+      _country = index < 0 ? 0 : index;
+    });
+  }
   late int _language =
       context.read<LocaleCubit>().isArabic ? 1 : 0; // index into _kLanguages
 
@@ -63,7 +79,9 @@ class _LocalePageState extends State<LocalePage> {
 
   void _continue() {
     // Apply + persist the chosen language app-wide (index 1 = العربية).
-    context.read<LocaleCubit>().setLanguage(_language == 1 ? 'ar' : 'en');
+    final locale = context.read<LocaleCubit>();
+    locale.setLanguage(_language == 1 ? 'ar' : 'en');
+    locale.setCountry(_countries[_country].iso2);
     // Reached from onboarding normally; from Profile it can just pop back.
     if (context.canPop()) {
       context.pop();
@@ -93,13 +111,13 @@ class _LocalePageState extends State<LocalePage> {
               const SizedBox(height: 16),
               _SectionLabel(AppStrings.countryLabel),
               const SizedBox(height: 8),
-              for (var i = 0; i < _kCountries.length; i++) ...[
+              for (var i = 0; i < _countries.length; i++) ...[
                 _CountryRow(
-                  country: _kCountries[i],
+                  country: _countries[i],
                   selected: i == _country,
                   onTap: () => setState(() => _country = i),
                 ),
-                if (i != _kCountries.length - 1) const SizedBox(height: 7),
+                if (i != _countries.length - 1) const SizedBox(height: 7),
               ],
               const SizedBox(height: 18),
               _SectionLabel(AppStrings.languageLabel),
@@ -159,7 +177,7 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _CountryRow extends StatelessWidget {
-  final _Country country;
+  final Country country;
   final bool selected;
   final VoidCallback onTap;
   const _CountryRow({

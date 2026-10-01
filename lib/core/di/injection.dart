@@ -1,7 +1,11 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../countries/countries_remote_data_source.dart';
 import '../locale/locale_cubit.dart';
+import '../push/push_service.dart';
+import '../settings/settings_remote_data_source.dart';
+import '../../features/policies/data/policies_remote_data_source.dart';
 import '../network/dio_client.dart';
 import '../../app/app_router.dart';
 import '../../features/auth/data/datasources/auth_local_data_source.dart';
@@ -32,6 +36,14 @@ import '../../features/address/data/datasources/address_remote_data_source.dart'
 import '../../features/address/data/repositories/address_repository_impl.dart';
 import '../../features/address/domain/repositories/address_repository.dart';
 import '../../features/address/presentation/cubit/address_cubit.dart';
+import '../../features/checkout/data/datasources/checkout_remote_data_source.dart';
+import '../../features/checkout/data/repositories/checkout_repository_impl.dart';
+import '../../features/checkout/domain/repositories/checkout_repository.dart';
+import '../../features/checkout/presentation/cubit/checkout_cubit.dart';
+import '../../features/orders/data/datasources/orders_remote_data_source.dart';
+import '../../features/orders/data/repositories/orders_repository_impl.dart';
+import '../../features/orders/domain/repositories/orders_repository.dart';
+import '../../features/orders/presentation/cubit/orders_cubit.dart';
 
 /// Global service locator.
 final GetIt sl = GetIt.instance;
@@ -44,17 +56,39 @@ Future<void> initDependencies() async {
 
   // Language (en/ar). Constructed eagerly so AppStrings/AppTextStyles are
   // bound to the persisted locale before the first frame.
-  sl.registerLazySingleton<LocaleCubit>(() => LocaleCubit(prefs: prefs));
+  sl.registerLazySingleton<LocaleCubit>(() => LocaleCubit(
+        prefs: prefs,
+        settings: sl<SettingsRemoteDataSource>(),
+        isLoggedIn: () => sl<AuthLocalDataSource>().isLoggedIn,
+      ));
+  sl.registerLazySingleton<SettingsRemoteDataSource>(
+    () => SettingsRemoteDataSource(client: sl()),
+  );
+  sl.registerLazySingleton<CountriesRemoteDataSource>(
+    () => CountriesRemoteDataSource(client: sl()),
+  );
+  sl.registerLazySingleton<PushService>(() => PushService(client: sl()));
+  sl.registerLazySingleton<PoliciesRemoteDataSource>(
+    () => PoliciesRemoteDataSource(client: sl()),
+  );
   // Dio attaches the auth bearer token via the local auth store (resolved
   // lazily, so registration order with AuthLocalDataSource doesn't matter).
-  // On a 401 it clears the session and routes to the sign-in page.
+  // On a 401 it refreshes the token pair and replays the request; only if
+  // that fails does it clear the session and route to the sign-in page.
   sl.registerLazySingleton<DioClient>(
     () => DioClient(
       tokenProvider: () => sl<AuthLocalDataSource>().accessToken,
+      refreshTokenProvider: () => sl<AuthLocalDataSource>().refreshToken,
+      onTokensRefreshed: (access, refresh) => sl<AuthLocalDataSource>()
+          .saveTokens(accessToken: access, refreshToken: refresh),
       // API localizes error messages from this header (en / ar).
       languageProvider: () => sl<LocaleCubit>().state.languageCode,
       onUnauthorized: () {
         sl<AuthLocalDataSource>().clear();
+        // Drop the previous user's cart/wishlist so the next login reloads.
+        sl<CartCubit>().reset();
+        sl<WishlistCubit>().reset();
+        sl<OrdersCubit>().reset();
         AppRouter.router.go(AppRoute.login.path);
       },
     ),
@@ -76,6 +110,7 @@ Future<void> initDependencies() async {
       remoteDataSource: sl(),
       localDataSource: sl(),
       googleAuthDataSource: sl(),
+      beforeLogout: () => sl<PushService>().unregister(),
     ),
   );
   // Domain
@@ -139,4 +174,24 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<WishlistCubit>(
     () => WishlistCubit(repository: sl()),
   );
+
+  // ---- Checkout (live API) ----
+  sl.registerLazySingleton<CheckoutRemoteDataSource>(
+    () => CheckoutRemoteDataSourceImpl(client: sl()),
+  );
+  sl.registerLazySingleton<CheckoutRepository>(
+    () => CheckoutRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerFactory<CheckoutCubit>(
+    () => CheckoutCubit(repository: sl(), cart: sl()),
+  );
+
+  // ---- Orders (live API) ----
+  sl.registerLazySingleton<OrdersRemoteDataSource>(
+    () => OrdersRemoteDataSourceImpl(client: sl()),
+  );
+  sl.registerLazySingleton<OrdersRepository>(
+    () => OrdersRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<OrdersCubit>(() => OrdersCubit(repository: sl()));
 }

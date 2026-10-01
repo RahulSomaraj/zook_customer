@@ -8,4 +8,9 @@ abstract class AddressRepository {
   Future<Either<Failure, Address>> create(Address address);
   Future<Either<Failure, List<Address>>> getAddresses();
   Future<Either<Failure, Unit>> delete(String id);
+
+  /// Replaces all editable fields of [address] (must have an id).
+  Future<Either<Failure, Unit>> update(Address address);
+
+  Future<Either<Failure, Unit>> setDefault(String id);
 }

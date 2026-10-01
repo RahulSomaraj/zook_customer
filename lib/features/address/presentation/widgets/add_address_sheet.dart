@@ -10,13 +10,16 @@ import '../../../../core/widgets/zook_text_field.dart';
 import '../../domain/entities/address.dart';
 import '../cubit/address_cubit.dart';
 
-/// Bottom-sheet form to create a new delivery address via the API.
+/// Bottom-sheet form to create a delivery address — or, when [initial] is
+/// given, edit that address (PATCH).
 class AddAddressSheet extends StatefulWidget {
   final AddressCubit cubit;
-  const AddAddressSheet({super.key, required this.cubit});
+  final Address? initial;
+  const AddAddressSheet({super.key, required this.cubit, this.initial});
 
   /// Opens the sheet. Resolves to `true` when an address was saved.
-  static Future<bool?> show(BuildContext context, AddressCubit cubit) {
+  static Future<bool?> show(BuildContext context, AddressCubit cubit,
+      {Address? initial}) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -24,7 +27,7 @@ class AddAddressSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => AddAddressSheet(cubit: cubit),
+      builder: (_) => AddAddressSheet(cubit: cubit, initial: initial),
     );
   }
 
@@ -46,6 +49,27 @@ class _AddAddressSheetState extends State<AddAddressSheet> {
   String _label = 'Home';
   bool _isDefault = false;
   String? _error;
+
+  bool get _isEdit => widget.initial?.id != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final a = widget.initial;
+    if (a != null) {
+      _fullName.text = a.fullName;
+      _phone.text = AppConstants.nationalDigits(a.phone);
+      _line1.text = a.line1;
+      _line2.text = a.line2 ?? '';
+      _city.text = a.city;
+      _state.text = a.state;
+      _country.text = a.country;
+      _postalCode.text = a.postalCode ?? '';
+      _landmark.text = a.landmark ?? '';
+      _label = a.label;
+      _isDefault = a.isDefault;
+    }
+  }
 
   /// Smaller, subdued placeholder style for the form fields.
   static const TextStyle _hintStyle =
@@ -86,6 +110,9 @@ class _AddAddressSheetState extends State<AddAddressSheet> {
     setState(() => _error = null);
 
     final address = Address(
+      id: widget.initial?.id,
+      latitude: widget.initial?.latitude,
+      longitude: widget.initial?.longitude,
       fullName: _fullName.text.trim(),
       phone: AppConstants.toE164(_phone.text),
       label: _label,
@@ -100,7 +127,9 @@ class _AddAddressSheetState extends State<AddAddressSheet> {
       isDefault: _isDefault,
     );
 
-    final ok = await widget.cubit.add(address);
+    final ok = _isEdit
+        ? await widget.cubit.edit(address)
+        : await widget.cubit.add(address);
     if (!mounted) return;
     if (ok) {
       Navigator.of(context).pop(true);
@@ -140,7 +169,7 @@ class _AddAddressSheetState extends State<AddAddressSheet> {
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                     child: Row(
                       children: [
-                        Text('Add delivery address',
+                        Text(_isEdit ? 'Edit address' : 'Add delivery address',
                             style: AppTextStyles.title.copyWith(fontSize: 17)),
                         const Spacer(),
                         GestureDetector(
@@ -265,7 +294,7 @@ class _AddAddressSheetState extends State<AddAddressSheet> {
                         ],
                         const SizedBox(height: 16),
                         PrimaryButton(
-                          label: 'Save address',
+                          label: _isEdit ? 'Save changes' : 'Save address',
                           isLoading: submitting,
                           onPressed: _submit,
                         ),

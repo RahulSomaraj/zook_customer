@@ -14,10 +14,14 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthLocalDataSource localDataSource;
   final GoogleAuthDataSource googleAuthDataSource;
 
+  /// Runs while the session is still valid (e.g. unregister the push token).
+  final Future<void> Function()? beforeLogout;
+
   AuthRepositoryImpl({
     required this.remoteDataSource,
     required this.localDataSource,
     required this.googleAuthDataSource,
+    this.beforeLogout,
   });
 
   @override
@@ -150,6 +154,21 @@ class AuthRepositoryImpl implements AuthRepository {
     return AuthUserModel.fromJson(json);
   }
 
+  /// Revokes the session server-side (best-effort — never blocks sign-out on
+  /// network errors), then clears local tokens and the cached profile.
   @override
-  Future<void> logout() => localDataSource.clear();
+  Future<void> logout() async {
+    try {
+      await beforeLogout?.call();
+    } catch (_) {}
+    final refreshToken = localDataSource.refreshToken;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await remoteDataSource.logout(refreshToken);
+      } catch (_) {
+        // Offline / already expired — the local clear below still signs out.
+      }
+    }
+    await localDataSource.clear();
+  }
 }

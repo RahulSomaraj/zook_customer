@@ -6,9 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../core/constants/app_strings.dart';
 import '../core/di/injection.dart';
 import '../core/locale/locale_cubit.dart';
+import '../core/push/push_service.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/cart/presentation/cubit/cart_cubit.dart';
+import '../features/orders/domain/entities/orders_page_result.dart';
+import '../features/orders/presentation/cubit/orders_cubit.dart';
 import '../features/wishlist/presentation/cubit/wishlist_cubit.dart';
 import '../l10n/gen/app_localizations.dart';
 import 'app_router.dart';
@@ -29,6 +32,7 @@ class ZookApp extends StatelessWidget {
         ),
         BlocProvider<CartCubit>.value(value: sl<CartCubit>()),
         BlocProvider<WishlistCubit>.value(value: sl<WishlistCubit>()),
+        BlocProvider<OrdersCubit>.value(value: sl<OrdersCubit>()),
       ],
       child: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
@@ -38,9 +42,13 @@ class ZookApp extends StatelessWidget {
           if (state.status == AuthStatus.authenticated) {
             cart.load();
             wishlist.loadServer();
+            context.read<LocaleCubit>().pushToServer();
+            sl<PushService>().register();
+            context.read<OrdersCubit>().load(filter: OrderFilter.all);
           } else if (state.status == AuthStatus.initial) {
             cart.reset();
             wishlist.reset();
+            context.read<OrdersCubit>().reset();
           }
         },
         child: BlocBuilder<LocaleCubit, Locale>(

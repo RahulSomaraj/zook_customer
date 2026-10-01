@@ -13,6 +13,9 @@ import '../../../address/presentation/widgets/add_address_sheet.dart';
 import '../../../address/presentation/widgets/select_address_sheet.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/cubit/cart_cubit.dart';
+import '../../domain/entities/payment_method.dart';
+import '../../../orders/presentation/cubit/orders_cubit.dart';
+import '../cubit/checkout_cubit.dart';
 import '../../../../core/widgets/z_icon.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -23,31 +26,76 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  int _payIndex = 0;
+  /// Only COD is live until Mamo Pay is integrated (Phase 2); the prepaid
+  /// options are shown disabled.
+  PaymentMethod _payment = PaymentMethod.cod;
 
-  /// Social-signup users have no phone on file; delivery needs one. Mirrors
-  /// the backend PhoneVerifiedGuard on POST /customers/orders/checkout — when
-  /// checkout is wired to the API, also handle its 403
-  /// `PHONE_VERIFICATION_REQUIRED` with this same page.
+  /// Validates the address, pre-checks the phone (social-signup users have
+  /// none; the backend PhoneVerifiedGuard would 403 anyway), then submits.
   Future<void> _placeOrder(BuildContext context) async {
+    final address = context.read<AddressCubit>().state.selected;
+    if (address?.id == null) {
+      _snack(context, 'Add a delivery address to continue.');
+      return;
+    }
     final user = sl<AuthRepository>().currentUser;
     if (user != null && user.phoneNumber.isEmpty) {
       final verified =
           await context.push<bool>(AppRoute.verifyPhone.path) ?? false;
       if (!verified || !context.mounted) return;
     }
-    if (context.mounted) context.go(AppRoute.orderConfirmed.path);
+    if (!context.mounted) return;
+    context
+        .read<CheckoutCubit>()
+        .placeOrder(addressId: address!.id!, paymentMethod: _payment);
+  }
+
+  Future<void> _onCheckoutState(
+      BuildContext context, CheckoutState state) async {
+    final cubit = context.read<CheckoutCubit>();
+    switch (state.status) {
+      case CheckoutStatus.success:
+        sl<OrdersCubit>().refresh();
+        context.go(AppRoute.orderConfirmed.path, extra: state.order);
+      case CheckoutStatus.phoneRequired:
+        // Server says the phone isn't verified (e.g. stale local profile).
+        cubit.acknowledge();
+        final verified =
+            await context.push<bool>(AppRoute.verifyPhone.path) ?? false;
+        if (verified && context.mounted) _placeOrder(context);
+      case CheckoutStatus.failure:
+        _snack(context, state.errorMessage ?? 'Could not place your order.');
+        cubit.acknowledge();
+      case CheckoutStatus.idle:
+      case CheckoutStatus.submitting:
+        break;
+    }
+  }
+
+  void _snack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AddressCubit>(
-      create: (_) => sl<AddressCubit>(),
-      child: _buildScaffold(context),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AddressCubit>(create: (_) => sl<AddressCubit>()),
+        BlocProvider<CheckoutCubit>(create: (_) => sl<CheckoutCubit>()),
+      ],
+      child: BlocListener<CheckoutCubit, CheckoutState>(
+        listenWhen: (p, c) => p.status != c.status,
+        listener: _onCheckoutState,
+        child: Builder(builder: _buildScaffold),
+      ),
     );
   }
 
   Widget _buildScaffold(BuildContext context) {
+    final submitting =
+        context.select((CheckoutCubit c) => c.state.isSubmitting);
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -88,32 +136,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       _Section(
                         iconName: 'card',
                         title: 'Payment method',
-                        action: 'Add card',
                         child: Column(
                           children: [
                             _PayOption(
-                              icon: const ZIcon('card', size: 18, color: AppColors.charcoal),
-                              name: 'Visa ending ×××× 4821',
-                              meta: 'Expires 09/27',
-                              selected: _payIndex == 0,
-                              onTap: () => setState(() => _payIndex = 0),
+                              icon: const Text('💵', style: TextStyle(fontSize: 20)),
+                              name: 'Cash on delivery',
+                              meta: 'Pay the courier when your order arrives',
+                              selected: _payment == PaymentMethod.cod,
+                              onTap: () => setState(
+                                  () => _payment = PaymentMethod.cod),
+                            ),
+                            // Prepaid (Mamo Pay) — enabled in Phase 2.
+                            const Divider(height: 1, color: AppColors.border),
+                            const _PayOption(
+                              icon: ZIcon('card', size: 18, color: AppColors.charcoal),
+                              name: 'Credit / debit card',
+                              meta: 'Coming soon',
+                              selected: false,
+                              enabled: false,
                             ),
                             const Divider(height: 1, color: AppColors.border),
-                            _PayOption(
-                              icon: const Text('🍎', style: TextStyle(fontSize: 20)),
+                            const _PayOption(
+                              icon: Text('🍎', style: TextStyle(fontSize: 20)),
                               name: 'Apple Pay',
-                              meta: 'Touch ID to pay',
-                              selected: _payIndex == 1,
-                              onTap: () => setState(() => _payIndex = 1),
+                              meta: 'Coming soon',
+                              selected: false,
+                              enabled: false,
                             ),
                             const Divider(height: 1, color: AppColors.border),
                             _PayOption(
                               icon: const ZIcon('bag', size: 16, color: AppColors.charcoal),
                               name: 'Tabby — Pay in 4',
                               meta:
-                                  'AED ${formatAmount(state.tabbyInstalment)} × 4 · 0% interest',
-                              selected: _payIndex == 2,
-                              onTap: () => setState(() => _payIndex = 2),
+                                  'AED ${formatAmount(state.tabbyInstalment)} × 4 · Coming soon',
+                              selected: false,
+                              enabled: false,
                             ),
                           ],
                         ),
@@ -186,25 +243,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () => _placeOrder(context),
+                              onPressed: submitting || state.isEmpty
+                                  ? null
+                                  : () => _placeOrder(context),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
+                                disabledBackgroundColor:
+                                    AppColors.primary.withValues(alpha: 0.5),
                                 elevation: 0,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(9999)),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('Pay AED ${formatAmount(state.total)}',
-                                      style: AppTextStyles.button),
-                                  const SizedBox(width: 6),
-                                  const ZIcon('chev-r',
-                                      size: 16, color: AppColors.white),
-                                ],
-                              ),
+                              child: submitting
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2.2,
+                                          color: AppColors.white),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                            _payment == PaymentMethod.cod
+                                                ? 'Place order · AED ${formatAmount(state.total)}'
+                                                : 'Pay AED ${formatAmount(state.total)}',
+                                            style: AppTextStyles.button),
+                                        const SizedBox(width: 6),
+                                        const ZIcon('chev-r',
+                                            size: 16, color: AppColors.white),
+                                      ],
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -214,7 +287,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               const ZIcon('lock',
                                   size: 11, color: AppColors.light),
                               const SizedBox(width: 4),
-                              Text('Secured by Mamo Pay',
+                              Text(
+                                  _payment == PaymentMethod.cod
+                                      ? 'Pay in cash when your order arrives'
+                                      : 'Secured by Mamo Pay',
                                   style: AppTextStyles.caption.copyWith(
                                       fontSize: 11, color: AppColors.light)),
                             ],
@@ -445,21 +521,25 @@ class _PayOption extends StatelessWidget {
   final String name;
   final String meta;
   final bool selected;
-  final VoidCallback onTap;
+  final bool enabled;
+  final VoidCallback? onTap;
   const _PayOption({
     required this.icon,
     required this.name,
     required this.meta,
     required this.selected,
-    required this.onTap,
+    this.enabled = true,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
+      child: Opacity(
+        opacity: enabled ? 1 : 0.45,
+        child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
@@ -492,6 +572,7 @@ class _PayOption extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
